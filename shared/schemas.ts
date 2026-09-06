@@ -4,6 +4,97 @@ import { z } from "zod";
 // --- P2: Evidence & Gateways ---
 // (owned by P2 team — do not modify)
 
+export const TrackingStatusSchema = z.object({
+  orderId: z.string(),
+  carrier: z.string().nullable(),
+  trackingNumber: z.string().nullable(),
+  status: z.enum(["pending", "in_transit", "delivered", "exception", "unknown"]),
+  lastUpdate: z.string().nullable(),
+  deliveredAt: z.string().nullable(),
+  events: z
+    .array(
+      z.object({
+        timestamp: z.string(),
+        description: z.string(),
+        location: z.string().optional(),
+      })
+    )
+    .optional(),
+});
+export type TrackingStatus = z.infer<typeof TrackingStatusSchema>;
+
+export const RefundHistorySchema = z.object({
+  orderId: z.string(),
+  refunds: z.array(
+    z.object({
+      refundId: z.string(),
+      amount: z.number(),
+      currency: z.string(),
+      status: z.enum(["pending", "completed", "failed"]),
+      reason: z.string().nullable(),
+      createdAt: z.string(),
+    })
+  ),
+  totalRefunded: z.number(),
+});
+export type RefundHistory = z.infer<typeof RefundHistorySchema>;
+
+export const PaymentDetailsSchema = z.object({
+  orderId: z.string(),
+  paymentId: z.string(),
+  status: z.enum([
+    "authorized",
+    "captured",
+    "partially_refunded",
+    "refunded",
+    "voided",
+  ]),
+  amount: z.number(),
+  currency: z.string(),
+  method: z.string(),
+  avsResult: z.string().nullable(),
+  cvvResult: z.string().nullable(),
+  gateway: z.enum(["stripe", "paypal", "razorpay", "shopify_payments", "unknown"]),
+  capturedAt: z.string().nullable(),
+});
+export type PaymentDetails = z.infer<typeof PaymentDetailsSchema>;
+
+export const CustomerHistorySchema = z.object({
+  customerId: z.string(),
+  email: z.string(),
+  totalOrders: z.number(),
+  accountCreatedAt: z.string(),
+  recentOrders: z.array(
+    z.object({
+      orderId: z.string(),
+      totalAmount: z.number(),
+      currency: z.string(),
+      createdAt: z.string(),
+      status: z.enum(["completed", "cancelled", "refunded", "pending"]),
+    })
+  ),
+  disputeCount: z.number(),
+});
+export type CustomerHistory = z.infer<typeof CustomerHistorySchema>;
+
+export const SubmissionResultSchema = z.object({
+  success: z.boolean(),
+  gatewayReference: z.string().optional(),
+  error: z.string().optional(),
+});
+export type SubmissionResult = z.infer<typeof SubmissionResultSchema>;
+
+export const GatewayTypeSchema = z.enum(["stripe", "paypal", "razorpay"]);
+export type GatewayType = z.infer<typeof GatewayTypeSchema>;
+
+export interface GatewayAdapter {
+  submitEvidence(
+    disputeId: string,
+    pkg: VerifiedEvidencePackage
+  ): Promise<SubmissionResult>;
+  checkStatus(disputeId: string): Promise<SubmissionResult>;
+}
+
 // --- P3: AI Agent ---
 // (owned by P3 team — do not modify)
 
