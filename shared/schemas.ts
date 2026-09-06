@@ -95,8 +95,29 @@ export interface GatewayAdapter {
   checkStatus(disputeId: string): Promise<SubmissionResult>;
 }
 
-// --- P3: AI Agent ---
+// --- P3: AI Agent Loop ---
 // (owned by P3 team — do not modify)
+
+export const LedgerEntrySchema = z.object({
+  step: z.number(),
+  toolCalled: z.string().nullable(),
+  toolInput: z.record(z.unknown()).nullable(),
+  toolOutput: z.record(z.unknown()).nullable(),
+  reasoning: z.string(),
+  timestamp: z.string(),
+});
+export type LedgerEntry = z.infer<typeof LedgerEntrySchema>;
+
+export const AgentVerifiedEvidencePackageSchema = z.object({
+  disputeId: z.string(),
+  evidence: z.record(z.unknown()),
+  confidenceScore: z.number().min(0).max(100),
+  status: z.enum(["auto_submit", "review", "insufficient"]),
+  ledger: z.array(LedgerEntrySchema),
+});
+export type AgentVerifiedEvidencePackage = z.infer<
+  typeof AgentVerifiedEvidencePackageSchema
+>;
 
 // --- P4: Response Gen + Dashboard ---
 // (owned by P4 team — do not modify)
