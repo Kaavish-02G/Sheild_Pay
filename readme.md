@@ -43,7 +43,7 @@ The engine never talks to Shopify directly — everything goes through the `Plat
 
 - **Framework:** Next.js 14+ (App Router), TypeScript, single codebase for API + dashboard
 - **Database:** MongoDB (`mongodb` driver)
-- **AI:** Ollama (`llama3.1:8b`) via Vercel AI SDK — tool-calling agent loop + response generation
+- **AI:** Ollama (`Qwen2.5:3b`) via Vercel AI SDK — tool-calling agent loop + response generation
 - **Validation:** Zod (shared schemas/contracts)
 - **Platform integration:** Shopify CLI (`@shopify/cli`, `@shopify/app`), real OAuth via local dev tunnel against a Shopify Partner dev store
 - **Payments:** `stripe`, `razorpay` SDKs; PayPal via REST
