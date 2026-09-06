@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# env
+.env
+.env.local
+
+# next.js
+.next/
+out/
+
+# debug
+npm-debug.log*
+
+# typescript
+next-env.d.ts
+
+# os
+.DS_Store
+Thumbs.db
