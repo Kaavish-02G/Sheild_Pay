@@ -1,0 +1,29 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+name = "shieldpay"
+client_id = "YOUR_SHOPIFY_API_KEY"
+application_url = "https://localhost:3000"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "YOUR_DEV_STORE.myshopify.com"
+
+[access_scopes]
+scopes = "read_orders,read_customers,read_fulfillments"
+
+[auth]
+redirect_urls = [
+  "https://localhost:3000/api/core/auth/callback",
+  "http://localhost:3000/api/core/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-10"
+
+  [[webhooks.subscriptions]]
+  topics = ["orders/updated", "fulfillments/create"]
+  uri = "/api/core/webhooks"
+
+[pos]
+embedded = false

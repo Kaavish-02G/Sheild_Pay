@@ -1,0 +1,6 @@
+roles = ["frontend", "backend"]
+auth_redirect_path = "/api/core/auth/callback"
+webhooks_path = "/api/core/webhooks"
+
+[commands]
+dev = "npm run dev"

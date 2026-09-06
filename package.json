@@ -1,0 +1,34 @@
+{
+  "name": "shieldpay",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "node scripts/test.mjs all",
+    "test:p1": "node scripts/test.mjs p1",
+    "test:p1:unit": "tsx scripts/p1/unit.ts",
+    "test:p1:api": "node scripts/p1/api.mjs",
+    "test:p2": "node scripts/test.mjs p2",
+    "test:p3": "node scripts/test.mjs p3",
+    "test:p4": "node scripts/test.mjs p4",
+    "test:all": "node scripts/test.mjs all",
+    "shopify:dev": "shopify app dev"
+  },
+  "dependencies": {
+    "mongodb": "^6.12.0",
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "tsx": "^4.23.13",
+    "typescript": "^5.0.0"
+  }
+}
