@@ -1,5 +1,5 @@
 import { generateText, isStepCount } from "ai";
-import { fetchDisputeContext, persistDisputeStatus } from "./dispute";
+import { fetchDisputeContext, persistDisputeStatus, persistEvidencePackage } from "./dispute";
 import { getOllamaModel } from "./model";
 import { mapScoreToStatus, scoreEvidence } from "./scoring";
 import {
@@ -131,6 +131,8 @@ export async function runDisputeInvestigation(
   };
 
   const validated = VerifiedEvidencePackageSchema.parse(pkg);
+
+  await persistEvidencePackage(disputeId, validated as unknown as Record<string, unknown>);
 
   if (status === "review" || status === "insufficient") {
     await persistDisputeStatus(

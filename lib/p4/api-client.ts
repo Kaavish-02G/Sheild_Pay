@@ -1,11 +1,11 @@
 import {
   DisputeSchema,
   MerchantSettingsSchema,
-  VerifiedEvidencePackageSchema,
   type Dispute,
   type MerchantSettings,
   type VerifiedEvidencePackage,
 } from "@/shared/schemas";
+import { toDashboardEvidencePackage } from "./evidence-adapter";
 import { z } from "zod";
 import disputesListMock from "@/shared/mocks/disputes_list.json";
 import evidencePackageMock from "@/shared/mocks/evidence_package.json";
@@ -72,8 +72,23 @@ export async function fetchDispute(id: string): Promise<Dispute | null> {
 }
 
 export async function fetchEvidencePackage(
-  disputeId: string
+  disputeId: string,
+  disputeReason = "chargeback"
 ): Promise<VerifiedEvidencePackage> {
+  try {
+    const stored = await fetch(`${getBaseUrl()}/api/core/disputes/${disputeId}`, {
+      cache: "no-store",
+    });
+    if (stored.ok) {
+      const storedData = await stored.json();
+      if (storedData.evidence) {
+        return toDashboardEvidencePackage(storedData.evidence, disputeReason);
+      }
+    }
+  } catch {
+    // fall through to invoke
+  }
+
   try {
     const res = await fetch(`${getBaseUrl()}/api/p3/invoke`, {
       method: "POST",
@@ -85,17 +100,16 @@ export async function fetchEvidencePackage(
       throw new Error(`P3 invoke returned ${res.status}`);
     }
     const data = await res.json();
-    return VerifiedEvidencePackageSchema.parse(data.package ?? data);
+    return toDashboardEvidencePackage(data.package ?? data, disputeReason);
   } catch (error) {
     console.warn(
-      `[P4] POST /api/p3/invoke failed for ${disputeId} — using mock evidence package`,
+      `[P4] Evidence fetch failed for ${disputeId} — using mock evidence package`,
       error instanceof Error ? error.message : error
     );
-    const mock = VerifiedEvidencePackageSchema.parse({
-      ...evidencePackageMock,
-      disputeId,
-    });
-    return mock;
+    return toDashboardEvidencePackage(
+      { ...evidencePackageMock, disputeId },
+      disputeReason
+    );
   }
 }
 

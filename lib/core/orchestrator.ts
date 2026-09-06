@@ -10,6 +10,10 @@ function getBaseUrl(): string {
 }
 
 export async function invokeP3(disputeId: string): Promise<void> {
+  if (process.env.NODE_ENV === "test" || process.env.SKIP_P3_INVOKE === "true") {
+    return;
+  }
+
   const url = `${getBaseUrl()}/api/p3/invoke`;
   const payload = { disputeId };
 

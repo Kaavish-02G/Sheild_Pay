@@ -139,8 +139,7 @@ export async function getRefundHistory(orderId: string): Promise<RefundHistory> 
     );
   }
 
-  const payload = result.data.refunds ?? result.data;
-  return parseOrThrow(RefundHistorySchema, "RefundHistory", payload);
+  return parseOrThrow(RefundHistorySchema, "RefundHistory", result.data);
 }
 
 // TODO: needs P1 route — GET /api/core/orders/:id/payment

@@ -194,3 +194,55 @@ export async function getDisputesNearDeadline(
     })
     .toArray();
 }
+
+export async function listDisputes(limit = 100): Promise<Dispute[]> {
+  const db = await getDb();
+  return db
+    .collection<Dispute>("disputes")
+    .find({})
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
+}
+
+export async function saveEvidencePackage(
+  disputeId: string,
+  pkg: Record<string, unknown>
+): Promise<Evidence> {
+  const db = await getDb();
+  const doc = { disputeId, package: pkg, createdAt: new Date() };
+  const result = await db.collection<Evidence>("evidence").findOneAndUpdate(
+    { disputeId },
+    { $set: doc },
+    { upsert: true, returnDocument: "after" }
+  );
+  if (!result) {
+    throw new Error(`Failed to save evidence for ${disputeId}`);
+  }
+  return result;
+}
+
+export async function getEvidencePackage(
+  disputeId: string
+): Promise<Evidence | null> {
+  const db = await getDb();
+  return db.collection<Evidence>("evidence").findOne({ disputeId });
+}
+
+export async function saveAiRun(
+  data: Omit<AiRun, "_id" | "createdAt">
+): Promise<AiRun> {
+  const db = await getDb();
+  const doc = { ...data, createdAt: new Date() };
+  const result = await db.collection<AiRun>("ai_runs").insertOne(doc as AiRun);
+  return { ...doc, _id: result.insertedId };
+}
+
+export function toMerchantSettingsResponse(
+  settings: MerchantSettings
+): MerchantSettings & { reviewAmountLimit: number } {
+  return {
+    reviewAmountLimit: 100,
+    ...settings,
+  };
+}

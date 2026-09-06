@@ -1,12 +1,12 @@
 import { generateText } from "ai";
-import { createOllama } from "ollama-ai-provider";
+import { createOllama } from "ai-sdk-ollama";
 import type { VerifiedEvidencePackage } from "@/shared/schemas";
 
 const ollama = createOllama({
-  baseURL: process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/api",
+  baseURL: process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434",
 });
 
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? "qwen2.5:0.5b";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? "llama3.1:8b";
 
 function buildEvidencePrompt(evidence: VerifiedEvidencePackage): string {
   const evidenceLines = evidence.evidence
@@ -37,7 +37,7 @@ function buildFallbackResponse(evidence: VerifiedEvidencePackage): string {
 
   const orderRef = orderField?.value ?? "the order in question";
   const deliveryRef = deliveryField?.value ?? "delivery records on file";
-  const paymentRef = paymentField?.value ?? "payment authorization records";
+  const paymentRef = paymentField?.value ?? "Payment authorization records";
 
   return (
     `We respectfully dispute this chargeback regarding ${orderRef}. ` +
@@ -55,9 +55,7 @@ export async function generateDisputeResponse(
 
   try {
     const { text } = await generateText({
-      model: ollama(OLLAMA_MODEL) as unknown as Parameters<
-        typeof generateText
-      >[0]["model"],
+      model: ollama(OLLAMA_MODEL),
       prompt,
     });
 

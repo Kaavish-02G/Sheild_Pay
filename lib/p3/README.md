@@ -27,7 +27,7 @@ P2 routes use the dynamic handler `app/api/p2/tools/[name]/route.ts` with camelC
 ## Env vars
 
 ```
-OLLAMA_BASE_URL=http://127.0.0.1:11434/api
+OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=llama3.1:8b
 MAX_ITERATIONS=6
 P3_STEP_TIMEOUT_MS=30000
