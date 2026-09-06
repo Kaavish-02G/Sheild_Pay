@@ -6,6 +6,7 @@ import { getDb } from "./db";
 export interface MerchantSettings {
   autoSubmitThreshold: number;
   minEvidenceScore: number;
+  reviewAmountLimit: number;
   requireApprovalHighValue: boolean;
   requireApprovalWeakEvidence: boolean;
 }
@@ -43,6 +44,7 @@ export interface Dispute {
   deadline: string;
   status: DisputeStatus;
   createdAt: Date;
+  responseText?: string;
 }
 
 export interface Evidence {
@@ -72,8 +74,9 @@ export interface SubmissionStatus {
 }
 
 const DEFAULT_SETTINGS: MerchantSettings = {
-  autoSubmitThreshold: 85,
-  minEvidenceScore: 40,
+  autoSubmitThreshold: 35,
+  minEvidenceScore: 25,
+  reviewAmountLimit: 500,
   requireApprovalHighValue: true,
   requireApprovalWeakEvidence: true,
 };
@@ -108,6 +111,24 @@ export async function updateDisputeStatus(
   const result = await db
     .collection<Dispute>("disputes")
     .findOneAndUpdate(filter, { $set: { status } }, { returnDocument: "after" });
+  return result ?? null;
+}
+
+export async function updateDisputeAfterAutomation(
+  id: string,
+  data: { status: DisputeStatus; responseText?: string }
+): Promise<Dispute | null> {
+  const db = await getDb();
+  const filter: Filter<Dispute> = ObjectId.isValid(id)
+    ? { _id: new ObjectId(id) }
+    : { disputeId: id };
+  const result = await db
+    .collection<Dispute>("disputes")
+    .findOneAndUpdate(
+      filter,
+      { $set: { status: data.status, responseText: data.responseText } },
+      { returnDocument: "after" }
+    );
   return result ?? null;
 }
 
@@ -239,10 +260,7 @@ export async function saveAiRun(
 }
 
 export function toMerchantSettingsResponse(
-  settings: MerchantSettings
-): MerchantSettings & { reviewAmountLimit: number } {
-  return {
-    reviewAmountLimit: 100,
-    ...settings,
-  };
+  settings: MerchantSettings = DEFAULT_SETTINGS
+): MerchantSettings {
+  return { ...DEFAULT_SETTINGS, ...settings };
 }

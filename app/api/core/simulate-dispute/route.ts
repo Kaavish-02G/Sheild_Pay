@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 const SimulateDisputeSchema = z.object({
   orderId: z.string().min(1),
   reason: z.string().min(1),
-  amount: z.number().positive(),
+  amount: z.number().positive().optional(),
 });
 
 async function resolveMerchant(shopDomain: string) {
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { orderId, reason, amount } = parsed.data;
+    const { orderId, reason } = parsed.data;
 
     const shopDomain =
       request.headers.get("x-shopify-shop-domain") ??
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
     shopifyAdapter.setShopContext(merchant.shopDomain, merchant.accessToken);
 
     const order = await fetchOrderForSimulate(orderId);
+    const amount = order.totalAmount;
 
     await cacheOrder({
       orderId: order.orderId,
@@ -88,6 +89,8 @@ export async function POST(request: NextRequest) {
       success: true,
       disputeId: event.disputeId,
       orderId: event.orderId,
+      amount: event.amount,
+      currency: event.currency,
       message: "Simulated dispute created and investigation started",
     });
   } catch (error) {

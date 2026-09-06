@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { updateDisputeStatus } from "@/lib/core/models";
 import { getGatewayAdapter, resolveGatewayType } from "@/lib/p2/gateways";
 import {
   GatewayTypeSchema,
@@ -32,6 +33,10 @@ export async function POST(request: NextRequest) {
     const gatewayType = resolveGatewayType(parsed.data.gatewayType);
     const adapter = getGatewayAdapter(gatewayType);
     const result = await adapter.submitEvidence(disputeId, evidencePackage);
+
+    if (result.success) {
+      await updateDisputeStatus(disputeId, "submitted");
+    }
 
     return NextResponse.json(SubmissionResultSchema.parse(result));
   } catch (error) {

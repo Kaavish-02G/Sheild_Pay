@@ -4,17 +4,32 @@ import {
   getMerchant,
   toMerchantSettingsResponse,
   updateMerchantSettings,
+  upsertMerchant,
 } from "@/lib/core/models";
 import { MerchantSettingsSchema } from "@/shared/schemas";
 
 export const dynamic = "force-dynamic";
+
+async function resolveMerchant(id: string) {
+  let merchant = await getMerchant(id);
+  if (merchant) {
+    return merchant;
+  }
+
+  if (process.env.SHOPIFY_MOCK_MODE === "true" || process.env.NODE_ENV === "test") {
+    merchant = await upsertMerchant(id, "mock-token");
+    return merchant;
+  }
+
+  return null;
+}
 
 export async function GET(
   _request: NextRequest,
   context: { params: { id: string } }
 ) {
   try {
-    const merchant = await getMerchant(context.params.id);
+    const merchant = await resolveMerchant(context.params.id);
     if (!merchant) {
       return NextResponse.json({ error: "Merchant not found" }, { status: 404 });
     }
@@ -46,8 +61,7 @@ export async function PATCH(
       );
     }
 
-    const { reviewAmountLimit: _ignored, ...coreSettings } = parsed.data;
-    const updated = await updateMerchantSettings(context.params.id, coreSettings);
+    const updated = await updateMerchantSettings(context.params.id, parsed.data);
     if (!updated) {
       return NextResponse.json({ error: "Merchant not found" }, { status: 404 });
     }

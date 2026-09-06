@@ -12,5 +12,6 @@ export function toDisputeResponse(doc: DbDispute): Dispute {
     deadline: doc.deadline,
     status: doc.status,
     createdAt: doc.createdAt.toISOString(),
+    responseText: doc.responseText ?? undefined,
   };
 }

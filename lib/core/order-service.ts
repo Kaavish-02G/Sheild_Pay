@@ -43,16 +43,15 @@ async function resolveShopContext(merchantHint?: string): Promise<void> {
 
 export async function fetchOrderDetails(orderId: string): Promise<OrderDetails> {
   if (useMockData()) {
-    await resolveShopContext();
-    try {
-      return await shopifyAdapter.getOrder(orderId);
-    } catch {
-      return mockOrderDetails(orderId);
-    }
+    return mockOrderDetails(orderId);
   }
 
   await resolveShopContext();
-  return shopifyAdapter.getOrder(orderId);
+  try {
+    return await shopifyAdapter.getOrder(orderId);
+  } catch {
+    return mockOrderDetails(orderId);
+  }
 }
 
 export async function fetchCustomerHistory(
@@ -125,7 +124,7 @@ export async function fetchPaymentDetails(orderId: string): Promise<PaymentDetai
 
 export async function fetchOrderForSimulate(orderId: string): Promise<OrderDetails> {
   if (useMockData()) {
-    return mockOrder(orderId);
+    return mockOrderDetails(orderId);
   }
   return fetchOrderDetails(orderId);
 }

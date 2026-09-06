@@ -140,7 +140,7 @@ export const DisputeSchema = z.object({
   deadline: z.string(),
   status: DisputeStatusSchema,
   createdAt: z.string().optional(),
-  responseText: z.string().optional(),
+  responseText: z.string().nullish(),
 });
 export type Dispute = z.infer<typeof DisputeSchema>;
 
@@ -167,7 +167,7 @@ export const AutomationResultSchema = z.object({
   action: AutomationActionSchema,
   disputeId: z.string(),
   message: z.string(),
-  responseText: z.string().optional(),
+  responseText: z.string().nullish(),
   notification: z
     .object({
       disputeId: z.string(),

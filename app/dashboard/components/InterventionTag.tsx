@@ -1,0 +1,25 @@
+import type { Dispute } from "@/shared/schemas";
+import { INTERVENTION_TAG, getInterventionKind } from "@/lib/p4/intervention-tag";
+
+interface InterventionTagProps {
+  dispute: Dispute;
+  size?: "sm" | "md";
+}
+
+export default function InterventionTag({ dispute, size = "sm" }: InterventionTagProps) {
+  const kind = getInterventionKind(dispute);
+  if (!kind) return null;
+
+  const tag = INTERVENTION_TAG[kind];
+  const sizeClass = size === "md" ? "px-3 py-1 text-sm" : "px-2.5 py-0.5 text-xs";
+
+  return (
+    <span
+      className={`inline-block rounded-full font-semibold ${sizeClass} ${tag.className}`}
+    >
+      {tag.label}
+    </span>
+  );
+}
+
+export { getInterventionKind, INTERVENTION_TAG };

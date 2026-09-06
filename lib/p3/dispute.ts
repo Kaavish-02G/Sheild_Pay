@@ -1,4 +1,5 @@
 import { DisputeSchema, type Dispute } from "@/shared/schemas";
+import { mockOrderTotal } from "@/shared/mocks/order-variation";
 import { fetchJson, getBaseUrl } from "./http";
 
 export interface DisputeContext {
@@ -32,7 +33,7 @@ export async function fetchDisputeContext(
     disputeId,
     orderId: disputeId.startsWith("sim-") ? "1042" : "1042",
     reason: "chargeback",
-    amount: 149.99,
+    amount: mockOrderTotal("1042"),
     currency: "USD",
   };
 }

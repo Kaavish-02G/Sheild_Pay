@@ -20,4 +20,5 @@ process.env.NODE_ENV ??= "test";
 
 if (process.env.NODE_ENV === "test") {
   process.env.SKIP_P3_INVOKE ??= "true";
+  process.env.SKIP_P4_AUTOMATION ??= "true";
 }

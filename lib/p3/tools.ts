@@ -10,6 +10,7 @@ import {
 } from "@/shared/schemas";
 import { fetchJson, getBaseUrl } from "./http";
 import type { LedgerEntry } from "./schemas";
+import { summarizeToolOutput } from "./tool-summaries";
 
 const OrderIdSchema = z.object({ orderId: z.string().min(1) });
 
@@ -133,7 +134,7 @@ function createEvidenceTool(
           toolCalled: toolName,
           toolInput: input,
           toolOutput: output,
-          reasoning: `Fetched ${toolName} for order ${input.orderId}.`,
+          reasoning: summarizeToolOutput(toolName as InvestigationToolName, output),
         });
         return output;
       } catch (error) {
@@ -187,40 +188,73 @@ export function createTools(ctx: ToolRuntimeContext) {
   };
 }
 
-const BASELINE_TOOLS = [
-  "getOrderDetails",
-  "getPaymentDetails",
-  "getCustomerHistory",
-] as const;
+export type InvestigationToolName = keyof typeof TOOL_ROUTES;
 
-export async function ensureBaselineEvidence(ctx: ToolRuntimeContext): Promise<void> {
-  for (const toolName of BASELINE_TOOLS) {
-    const config = TOOL_ROUTES[toolName];
-    if (ctx.evidence[config.evidenceKey]) {
-      continue;
-    }
+export function selectInvestigationPlan(reason: string): InvestigationToolName[] {
+  const normalized = reason.toLowerCase();
 
-    const input = { orderId: ctx.orderId };
-    try {
-      const output = await callP2Tool(toolName, ctx.orderId);
-      ctx.evidence[config.evidenceKey] = output;
-      ctx.toolCache.set(cacheKey(toolName, input), output);
-      ctx.appendLedger({
-        toolCalled: toolName,
-        toolInput: input,
-        toolOutput: output,
-        reasoning: `Baseline fallback fetched ${toolName} for order ${ctx.orderId}.`,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Tool execution failed";
-      ctx.appendLedger({
-        toolCalled: toolName,
-        toolInput: input,
-        toolOutput: { error: message },
-        reasoning: `Baseline fallback ${toolName} failed: ${message}`,
-      });
-    }
+  if (
+    normalized.includes("not_received") ||
+    normalized.includes("delivery") ||
+    normalized.includes("product_not_received")
+  ) {
+    return ["getOrderDetails", "getFulfillmentDetails", "getTrackingStatus"];
   }
+
+  if (normalized.includes("fraud")) {
+    return ["getOrderDetails", "getPaymentDetails", "getCustomerHistory"];
+  }
+
+  return ["getOrderDetails", "getPaymentDetails", "getTrackingStatus"];
+}
+
+export async function runInvestigationTool(
+  ctx: ToolRuntimeContext,
+  toolName: InvestigationToolName,
+  reasoning: string
+): Promise<void> {
+  const config = TOOL_ROUTES[toolName];
+  const input = { orderId: ctx.orderId };
+  const key = cacheKey(toolName, input);
+
+  if (ctx.toolCache.has(key)) {
+    const cached = ctx.toolCache.get(key) as Record<string, unknown>;
+    ctx.evidence[config.evidenceKey] = cached;
+    ctx.appendLedger({
+      toolCalled: toolName,
+      toolInput: input,
+      toolOutput: cached,
+      reasoning: summarizeToolOutput(toolName, cached),
+    });
+    return;
+  }
+
+  try {
+    const output = await callP2Tool(toolName, ctx.orderId);
+    ctx.evidence[config.evidenceKey] = output;
+    ctx.toolCache.set(key, output);
+    ctx.appendLedger({
+      toolCalled: toolName,
+      toolInput: input,
+      toolOutput: output,
+      reasoning: summarizeToolOutput(toolName, output),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Tool execution failed";
+    ctx.appendLedger({
+      toolCalled: toolName,
+      toolInput: input,
+      toolOutput: { error: message },
+      reasoning: `${reasoning} (${message})`,
+    });
+  }
+}
+
+export function hasEvidenceForTool(
+  ctx: ToolRuntimeContext,
+  toolName: InvestigationToolName
+): boolean {
+  return Boolean(ctx.evidence[TOOL_ROUTES[toolName].evidenceKey]);
 }
 
 export const tools = createTools({

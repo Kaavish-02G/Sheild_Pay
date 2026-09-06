@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Dispute } from "@/shared/schemas";
+import { INTERVENTION_TAG, getInterventionKind } from "@/lib/p4/intervention-tag";
 import EvidenceScoreBadge from "./EvidenceScoreBadge";
+import InterventionTag from "./InterventionTag";
 
 interface DisputeCardProps {
   dispute: Dispute;
@@ -22,11 +24,18 @@ const STATUS_COLORS: Record<Dispute["status"], string> = {
 };
 
 export default function DisputeCard({ dispute, confidenceScore }: DisputeCardProps) {
+  const interventionKind = getInterventionKind(dispute);
+  const borderClass =
+    interventionKind != null ? INTERVENTION_TAG[interventionKind].borderClassName : "";
+
   return (
     <Link
       href={`/dashboard/disputes/${dispute.disputeId}`}
-      className="block rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-500"
+      className={`block rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-500 ${borderClass}`}
     >
+      <div className="mb-3">
+        <InterventionTag dispute={dispute} />
+      </div>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{dispute.orderId}</p>

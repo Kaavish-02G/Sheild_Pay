@@ -1,4 +1,5 @@
 import type { GatewayAdapter, GatewayType } from "@/shared/schemas";
+import { mockGateway, useMockPaymentGateway } from "./mock";
 import { paypalGateway } from "./paypal";
 import { razorpayGateway } from "./razorpay";
 import { stripeGateway } from "./stripe";
@@ -10,6 +11,9 @@ const adapters: Record<GatewayType, GatewayAdapter> = {
 };
 
 export function getGatewayAdapter(gatewayType: GatewayType): GatewayAdapter {
+  if (useMockPaymentGateway()) {
+    return mockGateway;
+  }
   return adapters[gatewayType];
 }
 
@@ -26,4 +30,4 @@ export function resolveGatewayType(
   return "stripe";
 }
 
-export { stripeGateway, paypalGateway, razorpayGateway };
+export { stripeGateway, paypalGateway, razorpayGateway, mockGateway, useMockPaymentGateway };
