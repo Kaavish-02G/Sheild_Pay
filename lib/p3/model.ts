@@ -5,5 +5,13 @@ const ollama = createOllama({
 });
 
 export function getOllamaModel(modelId?: string) {
-  return ollama(modelId ?? process.env.OLLAMA_MODEL ?? "llama3.1:8b");
+  return ollama(modelId ?? process.env.OLLAMA_MODEL ?? "llama3.1:8b", {
+    reliableToolCalling: true,
+    toolCallingOptions: {
+      maxRetries: 3,
+      forceCompletion: true,
+      normalizeParameters: true,
+      validateResults: true,
+    },
+  });
 }

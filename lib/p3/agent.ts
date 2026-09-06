@@ -1,4 +1,5 @@
-import { generateText, isStepCount } from "ai";
+import { isStepCount } from "ai";
+import { generateText as ollamaGenerateText } from "ai-sdk-ollama";
 import { fetchDisputeContext, persistDisputeStatus, persistEvidencePackage } from "./dispute";
 import { getOllamaModel } from "./model";
 import { mapScoreToStatus, scoreEvidence } from "./scoring";
@@ -7,7 +8,7 @@ import {
   type LedgerEntry,
   type VerifiedEvidencePackage,
 } from "./schemas";
-import { createTools } from "./tools";
+import { createTools, ensureBaselineEvidence } from "./tools";
 
 const MAX_ITERATIONS = Number(process.env.MAX_ITERATIONS ?? "6") || 6;
 const STEP_TIMEOUT_MS = Number(process.env.P3_STEP_TIMEOUT_MS ?? "30000") || 30000;
@@ -28,9 +29,10 @@ Amount: ${context.currency} ${context.amount}
 
 Your job:
 1. Select the minimum necessary evidence tools to build a strong chargeback defense.
-2. Before each tool call, briefly state your reasoning in plain text.
-3. Stop calling tools once you have enough evidence — reply with a short summary instead of calling more tools.
-4. Prefer delivery/tracking for "not received" disputes; payment + customer history for fraud claims.
+2. Call tools using the native tool interface — never print JSON tool-call blobs in plain text.
+3. Before each tool call, briefly state your reasoning in plain text.
+4. Stop calling tools once you have enough evidence — reply with a short summary instead of calling more tools.
+5. Prefer delivery/tracking for "not received" disputes; payment + customer history for fraud claims.
 
 Available tools all take { orderId: "${context.orderId}" }.`;
 }
@@ -103,6 +105,10 @@ export async function runDisputeInvestigation(
     });
   }
 
+  if (Object.keys(evidence).length === 0) {
+    await ensureBaselineEvidence(ctx);
+  }
+
   if (!modelStopped) {
     appendLedger({
       toolCalled: null,
@@ -157,13 +163,17 @@ async function runAgentLoop(options: {
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const result = await generateText({
+      const result = await ollamaGenerateText({
         model: getOllamaModel(),
         system: options.system,
         prompt,
         tools: options.tools,
         stopWhen: isStepCount(MAX_ITERATIONS),
         timeout: STEP_TIMEOUT_MS,
+        enhancedOptions: {
+          enableSynthesis: true,
+          maxSynthesisAttempts: 2,
+        },
         onStepEnd: (step) => {
           if (step.text.trim()) {
             options.onModelText(step.text);

@@ -10,7 +10,7 @@ function getBaseUrl(): string {
 }
 
 export async function invokeP3(disputeId: string): Promise<void> {
-  if (process.env.NODE_ENV === "test" || process.env.SKIP_P3_INVOKE === "true") {
+  if (process.env.SKIP_P3_INVOKE === "true") {
     return;
   }
 
@@ -24,19 +24,17 @@ export async function invokeP3(disputeId: string): Promise<void> {
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok && process.env.NODE_ENV !== "test") {
+    if (!response.ok) {
       console.warn(
         `[orchestrator] P3 invoke returned ${response.status} for dispute ${disputeId}`
       );
     }
   } catch (error) {
-    if (process.env.NODE_ENV !== "test") {
-      console.warn(
-        `[orchestrator] P3 endpoint not available — logging payload for standalone dev:`,
-        payload,
-        error instanceof Error ? error.message : error
-      );
-    }
+    console.warn(
+      `[orchestrator] P3 endpoint not available — logging payload for standalone dev:`,
+      payload,
+      error instanceof Error ? error.message : error
+    );
   }
 }
 

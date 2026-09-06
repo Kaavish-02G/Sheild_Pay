@@ -187,6 +187,42 @@ export function createTools(ctx: ToolRuntimeContext) {
   };
 }
 
+const BASELINE_TOOLS = [
+  "getOrderDetails",
+  "getPaymentDetails",
+  "getCustomerHistory",
+] as const;
+
+export async function ensureBaselineEvidence(ctx: ToolRuntimeContext): Promise<void> {
+  for (const toolName of BASELINE_TOOLS) {
+    const config = TOOL_ROUTES[toolName];
+    if (ctx.evidence[config.evidenceKey]) {
+      continue;
+    }
+
+    const input = { orderId: ctx.orderId };
+    try {
+      const output = await callP2Tool(toolName, ctx.orderId);
+      ctx.evidence[config.evidenceKey] = output;
+      ctx.toolCache.set(cacheKey(toolName, input), output);
+      ctx.appendLedger({
+        toolCalled: toolName,
+        toolInput: input,
+        toolOutput: output,
+        reasoning: `Baseline fallback fetched ${toolName} for order ${ctx.orderId}.`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Tool execution failed";
+      ctx.appendLedger({
+        toolCalled: toolName,
+        toolInput: input,
+        toolOutput: { error: message },
+        reasoning: `Baseline fallback ${toolName} failed: ${message}`,
+      });
+    }
+  }
+}
+
 export const tools = createTools({
   orderId: "",
   evidence: {},
