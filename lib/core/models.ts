@@ -6,6 +6,7 @@ import { getDb } from "./db";
 export interface MerchantSettings {
   autoSubmitThreshold: number;
   minEvidenceScore: number;
+  reviewAmountLimit: number;
   requireApprovalHighValue: boolean;
   requireApprovalWeakEvidence: boolean;
 }
@@ -43,6 +44,7 @@ export interface Dispute {
   deadline: string;
   status: DisputeStatus;
   createdAt: Date;
+  responseText?: string;
 }
 
 export interface Evidence {
@@ -72,8 +74,9 @@ export interface SubmissionStatus {
 }
 
 const DEFAULT_SETTINGS: MerchantSettings = {
-  autoSubmitThreshold: 85,
-  minEvidenceScore: 40,
+  autoSubmitThreshold: 35,
+  minEvidenceScore: 25,
+  reviewAmountLimit: 500,
   requireApprovalHighValue: true,
   requireApprovalWeakEvidence: true,
 };
@@ -108,6 +111,24 @@ export async function updateDisputeStatus(
   const result = await db
     .collection<Dispute>("disputes")
     .findOneAndUpdate(filter, { $set: { status } }, { returnDocument: "after" });
+  return result ?? null;
+}
+
+export async function updateDisputeAfterAutomation(
+  id: string,
+  data: { status: DisputeStatus; responseText?: string }
+): Promise<Dispute | null> {
+  const db = await getDb();
+  const filter: Filter<Dispute> = ObjectId.isValid(id)
+    ? { _id: new ObjectId(id) }
+    : { disputeId: id };
+  const result = await db
+    .collection<Dispute>("disputes")
+    .findOneAndUpdate(
+      filter,
+      { $set: { status: data.status, responseText: data.responseText } },
+      { returnDocument: "after" }
+    );
   return result ?? null;
 }
 
@@ -193,4 +214,53 @@ export async function getDisputesNearDeadline(
       deadline: { $lte: cutoff, $gte: now },
     })
     .toArray();
+}
+
+export async function listDisputes(limit = 100): Promise<Dispute[]> {
+  const db = await getDb();
+  return db
+    .collection<Dispute>("disputes")
+    .find({})
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
+}
+
+export async function saveEvidencePackage(
+  disputeId: string,
+  pkg: Record<string, unknown>
+): Promise<Evidence> {
+  const db = await getDb();
+  const doc = { disputeId, package: pkg, createdAt: new Date() };
+  const result = await db.collection<Evidence>("evidence").findOneAndUpdate(
+    { disputeId },
+    { $set: doc },
+    { upsert: true, returnDocument: "after" }
+  );
+  if (!result) {
+    throw new Error(`Failed to save evidence for ${disputeId}`);
+  }
+  return result;
+}
+
+export async function getEvidencePackage(
+  disputeId: string
+): Promise<Evidence | null> {
+  const db = await getDb();
+  return db.collection<Evidence>("evidence").findOne({ disputeId });
+}
+
+export async function saveAiRun(
+  data: Omit<AiRun, "_id" | "createdAt">
+): Promise<AiRun> {
+  const db = await getDb();
+  const doc = { ...data, createdAt: new Date() };
+  const result = await db.collection<AiRun>("ai_runs").insertOne(doc as AiRun);
+  return { ...doc, _id: result.insertedId };
+}
+
+export function toMerchantSettingsResponse(
+  settings: MerchantSettings = DEFAULT_SETTINGS
+): MerchantSettings {
+  return { ...DEFAULT_SETTINGS, ...settings };
 }

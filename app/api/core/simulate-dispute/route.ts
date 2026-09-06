@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { shopifyAdapter } from "@/lib/adapters/shopify";
 import { handleDisputeEvent } from "@/lib/core/orchestrator";
-import { getMerchantByShopDomain, cacheOrder } from "@/lib/core/models";
+import { fetchOrderForSimulate } from "@/lib/core/order-service";
+import { getMerchantByShopDomain, cacheOrder, upsertMerchant } from "@/lib/core/models";
 import { randomUUID } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +11,22 @@ export const dynamic = "force-dynamic";
 const SimulateDisputeSchema = z.object({
   orderId: z.string().min(1),
   reason: z.string().min(1),
-  amount: z.number().positive(),
+  amount: z.number().positive().optional(),
 });
+
+async function resolveMerchant(shopDomain: string) {
+  let merchant = await getMerchantByShopDomain(shopDomain);
+  if (merchant) {
+    return merchant;
+  }
+
+  if (process.env.SHOPIFY_MOCK_MODE === "true" || process.env.NODE_ENV === "test") {
+    merchant = await upsertMerchant(shopDomain, "mock-token");
+    return merchant;
+  }
+
+  return null;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,20 +40,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { orderId, reason, amount } = parsed.data;
+    const { orderId, reason } = parsed.data;
 
     const shopDomain =
       request.headers.get("x-shopify-shop-domain") ??
-      process.env.SHOPIFY_DEV_STORE;
+      process.env.SHOPIFY_DEV_STORE ??
+      "demo-merchant.myshopify.com";
 
-    if (!shopDomain) {
-      return NextResponse.json(
-        { error: "No shop context — set SHOPIFY_DEV_STORE or pass x-shopify-shop-domain header" },
-        { status: 400 }
-      );
-    }
-
-    const merchant = await getMerchantByShopDomain(shopDomain);
+    const merchant = await resolveMerchant(shopDomain);
     if (!merchant) {
       return NextResponse.json(
         { error: `No merchant found for ${shopDomain} — run shopify app dev and authenticate first` },
@@ -48,7 +57,8 @@ export async function POST(request: NextRequest) {
 
     shopifyAdapter.setShopContext(merchant.shopDomain, merchant.accessToken);
 
-    const order = await shopifyAdapter.getOrder(orderId);
+    const order = await fetchOrderForSimulate(orderId);
+    const amount = order.totalAmount;
 
     await cacheOrder({
       orderId: order.orderId,
@@ -79,6 +89,8 @@ export async function POST(request: NextRequest) {
       success: true,
       disputeId: event.disputeId,
       orderId: event.orderId,
+      amount: event.amount,
+      currency: event.currency,
       message: "Simulated dispute created and investigation started",
     });
   } catch (error) {

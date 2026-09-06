@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Dispute } from "@/shared/schemas";
-import { fetchDisputes, fetchEvidencePackage, runDisputeAutomation } from "@/lib/p4/api-client";
+import { fetchDisputes, fetchDisputeSnapshot } from "@/lib/p4/api-client";
 import DisputeCard from "./components/DisputeCard";
 import SimulateDisputeModal from "./components/SimulateDisputeModal";
 import ReviewNotificationBanner from "./components/ReviewNotificationBanner";
@@ -25,12 +25,12 @@ export default function DashboardPage() {
     setScores(scoreMap);
 
     list.forEach(async (d) => {
-      if (d.status === "investigating") {
-        runDisputeAutomation(d.disputeId).catch(() => {});
-      }
       try {
-        const pkg = await fetchEvidencePackage(d.disputeId);
-        setScores((prev) => ({ ...prev, [d.disputeId]: pkg.confidenceScore }));
+        const snapshot = await fetchDisputeSnapshot(d.disputeId);
+        const score = snapshot.evidence?.confidenceScore ?? null;
+        if (score != null) {
+          setScores((prev) => ({ ...prev, [d.disputeId]: score }));
+        }
       } catch {
         // keep pending
       }
@@ -51,7 +51,7 @@ export default function DashboardPage() {
             Disputes
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Fully agentic dispute handling — you only intervene above your review limit.
+            Fully agentic dispute handling — green tag = sent to PG, red tag = needs your action.
           </p>
         </div>
         <SimulateDisputeModal onSuccess={loadDisputes} />

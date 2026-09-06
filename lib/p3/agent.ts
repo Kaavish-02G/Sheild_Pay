@@ -1,4 +1,6 @@
-import { generateText, isStepCount } from "ai";
+import { isStepCount, type ModelMessage } from "ai";
+import { generateText as ollamaGenerateText } from "ai-sdk-ollama";
+import { saveEvidencePackage } from "@/lib/core/models";
 import { fetchDisputeContext, persistDisputeStatus } from "./dispute";
 import { getOllamaModel } from "./model";
 import { mapScoreToStatus, scoreEvidence } from "./scoring";
@@ -7,32 +9,52 @@ import {
   type LedgerEntry,
   type VerifiedEvidencePackage,
 } from "./schemas";
-import { createTools } from "./tools";
+import {
+  createTools,
+  hasEvidenceForTool,
+  runInvestigationTool,
+  selectInvestigationPlan,
+  type InvestigationToolName,
+  type ToolRuntimeContext,
+} from "./tools";
 
-const MAX_ITERATIONS = Number(process.env.MAX_ITERATIONS ?? "6") || 6;
+const INVESTIGATION_STEPS =
+  Number(process.env.P3_INVESTIGATION_STEPS ?? "3") || 3;
+const STEP_PAUSE_MS = Number(process.env.P3_STEP_PAUSE_MS ?? "700") || 700;
 const STEP_TIMEOUT_MS = Number(process.env.P3_STEP_TIMEOUT_MS ?? "30000") || 30000;
 
-function buildSystemPrompt(context: {
-  disputeId: string;
-  reason: string;
-  amount: number;
-  currency: string;
-  orderId: string;
-}): string {
-  return `You are ShieldPay's dispute investigation agent.
+function useFastLiveMode(): boolean {
+  return process.env.P3_LIVE_FAST_MODE !== "false";
+}
 
-Dispute ID: ${context.disputeId}
-Order ID: ${context.orderId}
-Reason: ${context.reason}
-Amount: ${context.currency} ${context.amount}
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-Your job:
-1. Select the minimum necessary evidence tools to build a strong chargeback defense.
-2. Before each tool call, briefly state your reasoning in plain text.
-3. Stop calling tools once you have enough evidence — reply with a short summary instead of calling more tools.
-4. Prefer delivery/tracking for "not received" disputes; payment + customer history for fraud claims.
+function buildInvestigationSummary(
+  evidence: Record<string, unknown>,
+  reason: string,
+  score: number,
+  status: string
+): string {
+  const order = evidence.order as Record<string, unknown> | undefined;
+  const orderId = order?.orderId ?? "unknown order";
+  const collected = Object.keys(evidence).filter((key) => evidence[key] != null);
+  return (
+    `Investigation complete for ${reason.replace(/_/g, " ")} on order ${orderId}. ` +
+    `Collected evidence: ${collected.length > 0 ? collected.join(", ") : "none"}. ` +
+    `Evidence score ${score}/100 → ${status}. Ready for response generation.`
+  );
+}
 
-Available tools all take { orderId: "${context.orderId}" }.`;
+async function persistProgress(
+  disputeId: string,
+  pkg: VerifiedEvidencePackage
+): Promise<void> {
+  await saveEvidencePackage(
+    disputeId,
+    pkg as unknown as Record<string, unknown>
+  );
 }
 
 export async function runDisputeInvestigation(
@@ -52,7 +74,7 @@ export async function runDisputeInvestigation(
     });
   };
 
-  const ctx = {
+  const ctx: ToolRuntimeContext = {
     orderId: dispute.orderId,
     evidence,
     ledger,
@@ -61,54 +83,42 @@ export async function runDisputeInvestigation(
     appendLedger,
   };
 
-  const tools = createTools(ctx);
-  const system = buildSystemPrompt({ ...dispute, disputeId });
+  const plan = selectInvestigationPlan(dispute.reason).slice(0, INVESTIGATION_STEPS);
 
   appendLedger({
     toolCalled: null,
     toolInput: null,
     toolOutput: null,
-    reasoning: `Starting investigation for dispute ${disputeId} (${dispute.reason}, ${dispute.currency} ${dispute.amount}).`,
+    reasoning: `Starting ${INVESTIGATION_STEPS}-step live investigation for dispute ${disputeId} (${dispute.reason}, ${dispute.currency} ${dispute.amount}). Planned tools: ${plan.join(" → ")}.`,
   });
 
-  let modelStopped = false;
+  const snapshot = (): VerifiedEvidencePackage => ({
+    disputeId,
+    evidence,
+    confidenceScore: scoreEvidence(evidence, dispute.reason),
+    status: mapScoreToStatus(scoreEvidence(evidence, dispute.reason)),
+    ledger,
+  });
 
-  try {
-    await runAgentLoop({
-      system,
-      tools,
+  await persistProgress(disputeId, snapshot());
+
+  if (useFastLiveMode()) {
+    await runFastLiveAgentLoop({
+      ctx,
+      plan,
+      disputeId,
+      reason: dispute.reason,
       orderId: dispute.orderId,
-      onModelText: (text) => {
-        if (text.trim().length > 0) {
-          appendLedger({
-            toolCalled: null,
-            toolInput: null,
-            toolOutput: null,
-            reasoning: text.trim(),
-          });
-        }
-      },
-      onComplete: () => {
-        modelStopped = true;
-      },
+      snapshot,
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Agent loop failed unexpectedly";
-    appendLedger({
-      toolCalled: null,
-      toolInput: null,
-      toolOutput: null,
-      reasoning: `Agent loop ended with error: ${message}. Returning partial evidence package.`,
-    });
-  }
-
-  if (!modelStopped) {
-    appendLedger({
-      toolCalled: null,
-      toolInput: null,
-      toolOutput: null,
-      reasoning: `Reached iteration limit (${MAX_ITERATIONS}) — finalizing with gathered evidence.`,
+  } else {
+    await runOllamaSteppedLoop({
+      ctx,
+      plan,
+      dispute,
+      disputeId,
+      appendLedger,
+      snapshot,
     });
   }
 
@@ -122,6 +132,19 @@ export async function runDisputeInvestigation(
     reasoning: `Evidence scoring complete: ${confidenceScore}/100 → ${status}.`,
   });
 
+  const summary = buildInvestigationSummary(
+    evidence,
+    dispute.reason,
+    confidenceScore,
+    status
+  );
+  appendLedger({
+    toolCalled: null,
+    toolInput: null,
+    toolOutput: null,
+    reasoning: summary,
+  });
+
   const pkg: VerifiedEvidencePackage = {
     disputeId,
     evidence,
@@ -131,6 +154,7 @@ export async function runDisputeInvestigation(
   };
 
   const validated = VerifiedEvidencePackageSchema.parse(pkg);
+  await persistProgress(disputeId, validated);
 
   if (status === "review" || status === "insufficient") {
     await persistDisputeStatus(
@@ -142,60 +166,88 @@ export async function runDisputeInvestigation(
   return validated;
 }
 
-async function runAgentLoop(options: {
-  system: string;
-  tools: ReturnType<typeof createTools>;
+async function runFastLiveAgentLoop(options: {
+  ctx: ToolRuntimeContext;
+  plan: InvestigationToolName[];
+  disputeId: string;
+  reason: string;
   orderId: string;
-  onModelText: (text: string) => void;
-  onComplete: () => void;
+  snapshot: () => VerifiedEvidencePackage;
 }): Promise<void> {
-  const prompt = `Investigate order ${options.orderId}. Use tools as needed, state reasoning before each tool call, and stop when confident.`;
+  for (let index = 0; index < options.plan.length; index += 1) {
+    const stepNum = index + 1;
+    const toolName = options.plan[index];
 
-  let lastError: unknown;
+    options.ctx.appendLedger({
+      toolCalled: null,
+      toolInput: { step: stepNum, tool: toolName },
+      toolOutput: null,
+      reasoning: `Step ${stepNum}/${INVESTIGATION_STEPS}: fetching ${toolName} for order ${options.orderId}…`,
+    });
+    await persistProgress(options.disputeId, options.snapshot());
+    await sleep(STEP_PAUSE_MS);
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      const result = await generateText({
-        model: getOllamaModel(),
-        system: options.system,
-        prompt,
-        tools: options.tools,
-        stopWhen: isStepCount(MAX_ITERATIONS),
-        timeout: STEP_TIMEOUT_MS,
-        onStepEnd: (step) => {
-          if (step.text.trim()) {
-            options.onModelText(step.text);
-          }
-          if (step.toolCalls.length === 0 && step.text.trim().length > 0) {
-            options.onComplete();
-          }
-        },
-      });
-
-      if (result.text.trim()) {
-        options.onModelText(result.text);
-      }
-      if (result.finishReason === "stop" || result.finishReason === "length") {
-        options.onComplete();
-      }
-      return;
-    } catch (error) {
-      lastError = error;
-      const message = error instanceof Error ? error.message : String(error);
-      const isToolParseError =
-        message.includes("tool") ||
-        message.includes("JSON") ||
-        message.includes("parse");
-
-      if (attempt === 0 && isToolParseError) {
-        console.warn("[P3] Malformed tool output — retrying once:", message);
-        continue;
-      }
-      throw error;
-    }
+    await runInvestigationTool(
+      options.ctx,
+      toolName,
+      `Step ${stepNum}/${INVESTIGATION_STEPS}: running ${toolName}.`
+    );
+    await persistProgress(options.disputeId, options.snapshot());
+    await sleep(STEP_PAUSE_MS);
   }
+}
 
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("Agent loop failed after retry");
+async function runOllamaSteppedLoop(options: {
+  ctx: ToolRuntimeContext;
+  plan: InvestigationToolName[];
+  dispute: { orderId: string; reason: string; currency: string; amount: number };
+  disputeId: string;
+  appendLedger: (entry: Omit<LedgerEntry, "step" | "timestamp">) => void;
+  snapshot: () => VerifiedEvidencePackage;
+}): Promise<void> {
+  const tools = createTools(options.ctx);
+  const system = `You are ShieldPay's dispute investigation agent. Order ${options.dispute.orderId}.`;
+  const messages: ModelMessage[] = [];
+  const steps = options.plan.slice(0, INVESTIGATION_STEPS);
+
+  for (let index = 0; index < steps.length; index += 1) {
+    const stepNum = index + 1;
+    const toolName = steps[index];
+    options.appendLedger({
+      toolCalled: null,
+      toolInput: { step: stepNum, tool: toolName },
+      toolOutput: null,
+      reasoning: `Agent loop step ${stepNum}/${INVESTIGATION_STEPS}: choose and call ${toolName}.`,
+    });
+    await persistProgress(options.disputeId, options.snapshot());
+
+    messages.push({
+      role: "user",
+      content: `Step ${stepNum}/${INVESTIGATION_STEPS} — call ${toolName} for order ${options.dispute.orderId}.`,
+    });
+
+    const before = Object.keys(options.ctx.evidence).length;
+    await ollamaGenerateText({
+      model: getOllamaModel(),
+      system,
+      messages,
+      tools,
+      activeTools: [toolName],
+      toolChoice: "required",
+      stopWhen: isStepCount(1),
+      timeout: STEP_TIMEOUT_MS,
+    });
+
+    if (
+      Object.keys(options.ctx.evidence).length === before &&
+      !hasEvidenceForTool(options.ctx, toolName)
+    ) {
+      await runInvestigationTool(
+        options.ctx,
+        toolName,
+        `Step ${stepNum}: executed ${toolName} directly.`
+      );
+    }
+    await persistProgress(options.disputeId, options.snapshot());
+  }
 }

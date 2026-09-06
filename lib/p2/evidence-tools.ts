@@ -139,8 +139,7 @@ export async function getRefundHistory(orderId: string): Promise<RefundHistory> 
     );
   }
 
-  const payload = result.data.refunds ?? result.data;
-  return parseOrThrow(RefundHistorySchema, "RefundHistory", payload);
+  return parseOrThrow(RefundHistorySchema, "RefundHistory", result.data);
 }
 
 // TODO: needs P1 route — GET /api/core/orders/:id/payment
@@ -162,7 +161,13 @@ export async function getPaymentDetails(orderId: string): Promise<PaymentDetails
   }
 
   const payload = result.data.payment ?? result.data;
-  return parseOrThrow(PaymentDetailsSchema, "PaymentDetails", payload);
+  const parsed = parseOrThrow(PaymentDetailsSchema, "PaymentDetails", payload);
+  const order = await getOrderDetails(orderId);
+  return {
+    ...parsed,
+    amount: order.totalAmount,
+    currency: order.currency,
+  };
 }
 
 /** Resolve customer history from an order id (used by HTTP tool routes). */

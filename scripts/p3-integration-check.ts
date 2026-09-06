@@ -36,6 +36,10 @@ async function main() {
     ),
   ];
 
+  const loopSteps = pkg.ledger.filter((e) =>
+    e.reasoning.includes("Agent loop step")
+  );
+
   console.log("OK p3-integration");
   console.log(
     JSON.stringify(
@@ -46,8 +50,13 @@ async function main() {
         confidenceScore: pkg.confidenceScore,
         evidenceKeys,
         toolsUsed,
+        investigationLoopSteps: loopSteps.length,
         ledgerSteps: pkg.ledger.length,
-        sampleLedger: pkg.ledger.slice(0, 3).map((e) => ({
+        loopTimeline: loopSteps.map((e) => ({
+          step: e.step,
+          reasoning: e.reasoning.slice(0, 100),
+        })),
+        sampleLedger: pkg.ledger.slice(0, 5).map((e) => ({
           step: e.step,
           tool: e.toolCalled,
           reasoning: e.reasoning.slice(0, 80),

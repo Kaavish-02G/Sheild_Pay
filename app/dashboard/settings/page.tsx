@@ -101,6 +101,34 @@ export default function SettingsPage() {
 
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Auto-Submit Threshold: {settings.autoSubmitThreshold}
+          </label>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+            Scores below this require merchant approval before submission. Set to
+            35 to intervene on weaker cases while still allowing the AI to investigate.
+          </p>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={settings.autoSubmitThreshold}
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                autoSubmitThreshold: Number(e.target.value),
+              })
+            }
+            className="mt-3 w-full max-w-md accent-blue-600"
+          />
+          <div className="mt-1 flex max-w-md justify-between text-xs text-slate-400">
+            <span>0 (always review)</span>
+            <span>35</span>
+            <span>100 (always auto)</span>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
             Minimum Evidence Score: {settings.minEvidenceScore}
           </label>
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
@@ -122,6 +150,31 @@ export default function SettingsPage() {
             <span>50</span>
             <span>100</span>
           </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            How confidence scores are calculated
+          </h2>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            The AI agent scores evidence from 0–100 using a weighted checklist during
+            investigation:
+          </p>
+          <ul className="mt-3 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+            <li>Delivery confirmed — up to +30</li>
+            <li>Tracking matches fulfillment — up to +20</li>
+            <li>Clean customer history — up to +15</li>
+            <li>Payment captured with AVS/CVV match — up to +15</li>
+            <li>No prior refunds on order — +10</li>
+            <li>Complete fulfillment record — +10</li>
+          </ul>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            Below <strong>{settings.minEvidenceScore}</strong> = insufficient (escalated).
+            Between <strong>{settings.minEvidenceScore}</strong> and{" "}
+            <strong>{settings.autoSubmitThreshold}</strong> = merchant review required.
+            At or above <strong>{settings.autoSubmitThreshold}</strong> = eligible for
+            auto-submit (if amount is within your review limit).
+          </p>
         </div>
 
         <div className="flex items-center gap-4">

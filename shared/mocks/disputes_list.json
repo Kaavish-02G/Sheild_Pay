@@ -4,7 +4,7 @@
     "orderId": "#1042",
     "merchantId": "demo-merchant",
     "reason": "fraudulent",
-    "amount": 149.99,
+    "amount": 99.99,
     "currency": "USD",
     "deadline": "2026-09-13T18:00:00.000Z",
     "status": "review",

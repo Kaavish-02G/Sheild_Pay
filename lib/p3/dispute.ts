@@ -1,4 +1,5 @@
 import { DisputeSchema, type Dispute } from "@/shared/schemas";
+import { mockOrderTotal } from "@/shared/mocks/order-variation";
 import { fetchJson, getBaseUrl } from "./http";
 
 export interface DisputeContext {
@@ -30,9 +31,9 @@ export async function fetchDisputeContext(
 
   return {
     disputeId,
-    orderId: disputeId.startsWith("sim-") ? "1001" : "unknown",
+    orderId: disputeId.startsWith("sim-") ? "1042" : "1042",
     reason: "chargeback",
-    amount: 0,
+    amount: mockOrderTotal("1042"),
     currency: "USD",
   };
 }
@@ -61,7 +62,31 @@ export async function persistDisputeStatus(
 
   if (!result.ok) {
     console.warn(
-      `[P3] PATCH /api/core/disputes/${disputeId} unavailable — status buffered in response only. TODO: needs P1 route`
+      `[P3] PATCH /api/core/disputes/${disputeId} failed — status buffered in response only:`,
+      result.error
+    );
+    return false;
+  }
+
+  return true;
+}
+
+export async function persistEvidencePackage(
+  disputeId: string,
+  pkg: Record<string, unknown>
+): Promise<boolean> {
+  const result = await fetchJson(
+    `${getBaseUrl()}/api/core/disputes/${encodeURIComponent(disputeId)}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ package: pkg }),
+    }
+  );
+
+  if (!result.ok) {
+    console.warn(
+      `[P3] POST /api/core/disputes/${disputeId} evidence failed:`,
+      result.error
     );
     return false;
   }

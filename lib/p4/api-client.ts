@@ -1,11 +1,11 @@
 import {
   DisputeSchema,
   MerchantSettingsSchema,
-  VerifiedEvidencePackageSchema,
   type Dispute,
   type MerchantSettings,
   type VerifiedEvidencePackage,
 } from "@/shared/schemas";
+import { toDashboardEvidencePackage } from "./evidence-adapter";
 import { z } from "zod";
 import disputesListMock from "@/shared/mocks/disputes_list.json";
 import evidencePackageMock from "@/shared/mocks/evidence_package.json";
@@ -25,7 +25,7 @@ export function getDefaultMerchantId(): string {
   return (
     process.env.NEXT_PUBLIC_MERCHANT_ID ??
     process.env.SHOPIFY_DEV_STORE ??
-    "demo-merchant"
+    "test-store.myshopify.com"
   );
 }
 
@@ -42,11 +42,11 @@ export async function fetchDisputes(): Promise<Dispute[]> {
     const list = Array.isArray(data) ? data : data.disputes;
     return z.array(DisputeSchema).parse(list);
   } catch (error) {
-    console.warn(
-      "[P4] GET /api/core/disputes failed — using mock fixture. TODO: needs P1 route",
+    console.error(
+      "[P4] GET /api/core/disputes failed:",
       error instanceof Error ? error.message : error
     );
-    return z.array(DisputeSchema).parse(disputesListMock);
+    return [];
   }
 }
 
@@ -71,9 +71,54 @@ export async function fetchDispute(id: string): Promise<Dispute | null> {
   }
 }
 
+export async function fetchDisputeSnapshot(id: string): Promise<{
+  dispute: Dispute | null;
+  evidence: VerifiedEvidencePackage | null;
+}> {
+  try {
+    const res = await fetch(`${getBaseUrl()}/api/core/disputes/${id}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      return { dispute: null, evidence: null };
+    }
+    const data = await res.json();
+    const dispute = DisputeSchema.parse(data.dispute ?? data);
+    const evidence = data.evidence
+      ? toDashboardEvidencePackage(data.evidence, dispute.reason)
+      : null;
+    return { dispute, evidence };
+  } catch {
+    return { dispute: null, evidence: null };
+  }
+}
+
 export async function fetchEvidencePackage(
-  disputeId: string
+  disputeId: string,
+  disputeReason = "chargeback",
+  options?: { storedOnly?: boolean }
 ): Promise<VerifiedEvidencePackage> {
+  try {
+    const stored = await fetch(`${getBaseUrl()}/api/core/disputes/${disputeId}`, {
+      cache: "no-store",
+    });
+    if (stored.ok) {
+      const storedData = await stored.json();
+      if (storedData.evidence) {
+        return toDashboardEvidencePackage(storedData.evidence, disputeReason);
+      }
+    }
+  } catch {
+    // fall through
+  }
+
+  if (options?.storedOnly) {
+    return toDashboardEvidencePackage(
+      { disputeId, evidence: {}, confidenceScore: 0, status: "insufficient", ledger: [] },
+      disputeReason
+    );
+  }
+
   try {
     const res = await fetch(`${getBaseUrl()}/api/p3/invoke`, {
       method: "POST",
@@ -85,17 +130,16 @@ export async function fetchEvidencePackage(
       throw new Error(`P3 invoke returned ${res.status}`);
     }
     const data = await res.json();
-    return VerifiedEvidencePackageSchema.parse(data.package ?? data);
+    return toDashboardEvidencePackage(data.package ?? data, disputeReason);
   } catch (error) {
     console.warn(
-      `[P4] POST /api/p3/invoke failed for ${disputeId} — using mock evidence package`,
+      `[P4] Evidence fetch failed for ${disputeId} — using mock evidence package`,
       error instanceof Error ? error.message : error
     );
-    const mock = VerifiedEvidencePackageSchema.parse({
-      ...evidencePackageMock,
-      disputeId,
-    });
-    return mock;
+    return toDashboardEvidencePackage(
+      { ...evidencePackageMock, disputeId },
+      disputeReason
+    );
   }
 }
 
@@ -113,11 +157,7 @@ export async function fetchMerchantSettings(
     }
     const data = await res.json();
     return {
-      settings: MerchantSettingsSchema.parse({
-        reviewAmountLimit: 100,
-        ...data.settings,
-        ...data,
-      }),
+      settings: MerchantSettingsSchema.parse(data.settings ?? data),
       persisted: true,
     };
   } catch (error) {
@@ -127,11 +167,11 @@ export async function fetchMerchantSettings(
     );
     return {
       settings: {
-        autoSubmitThreshold: 85,
-        minEvidenceScore: 40,
-        reviewAmountLimit: 100,
-        requireApprovalHighValue: false,
-        requireApprovalWeakEvidence: false,
+        autoSubmitThreshold: 35,
+        minEvidenceScore: 25,
+        reviewAmountLimit: 500,
+        requireApprovalHighValue: true,
+        requireApprovalWeakEvidence: true,
         requireApprovalMissingDeliveryProof: false,
       },
       persisted: false,
@@ -157,11 +197,7 @@ export async function updateMerchantSettings(
     }
     const data = await res.json();
     return {
-      settings: MerchantSettingsSchema.parse({
-        reviewAmountLimit: 100,
-        ...data.settings,
-        ...data,
-      }),
+      settings: MerchantSettingsSchema.parse(data.settings ?? data),
       persisted: true,
     };
   } catch (error) {
@@ -195,7 +231,7 @@ export async function simulateDispute(body: {
 }
 
 export type SubmitResult =
-  | { success: true }
+  | { success: true; gatewayReference?: string }
   | { success: false; unavailable: true }
   | { success: false; error: string };
 
@@ -210,18 +246,25 @@ export async function submitDispute(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    const data = await res.json();
     if (!res.ok) {
-      throw new Error(`P2 submit returned ${res.status}`);
+      throw new Error(data.error ?? `P2 submit returned ${res.status}`);
     }
-    return { success: true };
+    return { success: true, gatewayReference: data.gatewayReference };
   } catch (error) {
     console.warn(
-      "[P4] POST /api/p2/submit failed — submission service not yet available. Payload:",
-      payload,
+      "[P4] POST /api/p2/submit failed:",
       error instanceof Error ? error.message : error
     );
     return { success: false, unavailable: true };
   }
+}
+
+export async function sendToPaymentGateway(
+  disputeId: string,
+  package_: VerifiedEvidencePackage
+): Promise<SubmitResult> {
+  return submitDispute(disputeId, package_);
 }
 
 export async function generateResponse(
