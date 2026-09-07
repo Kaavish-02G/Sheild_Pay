@@ -16,6 +16,7 @@ import DisputePreviewModal from "../../components/DisputePreviewModal";
 import LiveAgentBanner from "../../components/LiveAgentBanner";
 import MockEvidenceScreenshots from "../../components/MockEvidenceScreenshots";
 import InterventionTag from "../../components/InterventionTag";
+import NetworkRuleBookPanel from "../../components/NetworkRuleBookPanel";
 import { sendToPaymentGateway } from "@/lib/p4/api-client";
 
 const STATUS_LABELS: Record<Dispute["status"], string> = {
@@ -232,8 +233,14 @@ export default function DisputeDetailPage() {
             Dispute: {dispute.orderId}
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {dispute.reason.replace(/_/g, " ")} · {dispute.currency}{" "}
-            {displayAmount.toFixed(2)}
+            {(evidence.canonicalReason ?? dispute.canonicalReason ?? dispute.reason).replace(
+              /_/g,
+              " "
+            )}
+            {(evidence.cardNetwork ?? dispute.cardNetwork)
+              ? ` · ${(evidence.cardNetwork ?? dispute.cardNetwork)?.toUpperCase()}`
+              : ""}{" "}
+            · {dispute.currency} {displayAmount.toFixed(2)}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -318,6 +325,15 @@ export default function DisputeDetailPage() {
           </div>
         </section>
       )}
+
+      <section className="mt-8">
+        <NetworkRuleBookPanel
+          cardNetwork={evidence.cardNetwork ?? dispute.cardNetwork}
+          canonicalReason={evidence.canonicalReason ?? dispute.canonicalReason}
+          rulePack={evidence.rulePack}
+          validation={evidence.validation}
+        />
+      </section>
 
       <section className="mt-8">
           <AutomationPanel

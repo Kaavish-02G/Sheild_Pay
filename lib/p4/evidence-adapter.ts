@@ -103,6 +103,13 @@ export function toDashboardEvidencePackage(
       evidence: evidenceRecordToFields(raw.evidence),
       ledger: ledgerToAudit(raw.ledger),
       generatedAt: new Date().toISOString(),
+      canonicalReason: raw.canonicalReason,
+      cardNetwork: raw.cardNetwork,
+      gateway: raw.gateway,
+      rulePack: raw.rulePack,
+      validation: raw.validation,
+      strategy: raw.strategy,
+      rebuttalIterations: raw.rebuttalIterations,
     });
   }
 

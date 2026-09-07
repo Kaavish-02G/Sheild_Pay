@@ -55,6 +55,10 @@ export const PaymentDetailsSchema = z.object({
   avsResult: z.string().nullable(),
   cvvResult: z.string().nullable(),
   gateway: z.enum(["stripe", "paypal", "razorpay", "shopify_payments", "unknown"]),
+  cardNetwork: z
+    .enum(["visa", "mastercard", "amex", "rupay", "unknown"])
+    .optional()
+    .default("unknown"),
   capturedAt: z.string().nullable(),
 });
 export type PaymentDetails = z.infer<typeof PaymentDetailsSchema>;
@@ -108,12 +112,65 @@ export const LedgerEntrySchema = z.object({
 });
 export type LedgerEntry = z.infer<typeof LedgerEntrySchema>;
 
+export const RulePackDisplaySchema = z.object({
+  network: z.enum(["visa", "mastercard", "amex", "rupay", "unknown"]),
+  canonicalReason: z.string(),
+  requirements: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+    })
+  ),
+  tools: z.array(
+    z.object({
+      name: z.string(),
+      label: z.string(),
+    })
+  ),
+});
+export type RulePackDisplay = z.infer<typeof RulePackDisplaySchema>;
+
 export const AgentVerifiedEvidencePackageSchema = z.object({
   disputeId: z.string(),
   evidence: z.record(z.unknown()),
   confidenceScore: z.number().min(0).max(100),
   status: z.enum(["auto_submit", "review", "insufficient"]),
   ledger: z.array(LedgerEntrySchema),
+  canonicalReason: z.string().optional(),
+  cardNetwork: z.string().optional(),
+  gateway: GatewayTypeSchema.optional(),
+  rulePack: RulePackDisplaySchema.optional(),
+  validation: z
+    .object({
+      checks: z.array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          passed: z.boolean(),
+          value: z.string().optional(),
+        })
+      ),
+      allRequiredMet: z.boolean(),
+      missingFields: z.array(z.string()),
+    })
+    .optional(),
+  strategy: z
+    .object({
+      focus: z.enum(["delivery_proof", "customer_history", "payment_proof", "combined"]),
+      rationale: z.string(),
+    })
+    .optional(),
+  rebuttalIterations: z
+    .array(
+      z.object({
+        iteration: z.number(),
+        draft: z.string(),
+        critique: z.string(),
+        approved: z.boolean(),
+      })
+    )
+    .optional(),
+  responseText: z.string().optional(),
 });
 export type AgentVerifiedEvidencePackage = z.infer<
   typeof AgentVerifiedEvidencePackageSchema
@@ -141,6 +198,13 @@ export const DisputeSchema = z.object({
   status: DisputeStatusSchema,
   createdAt: z.string().optional(),
   responseText: z.string().nullish(),
+  gateway: GatewayTypeSchema.optional(),
+  rawReason: z.string().optional(),
+  canonicalReason: z.string().optional(),
+  cardNetwork: z
+    .enum(["visa", "mastercard", "amex", "rupay", "unknown"])
+    .optional(),
+  platform: z.enum(["shopify", "mock_commerce"]).optional(),
 });
 export type Dispute = z.infer<typeof DisputeSchema>;
 
@@ -216,6 +280,40 @@ export const VerifiedEvidencePackageSchema = z.object({
   evidence: z.array(EvidenceFieldSchema),
   ledger: z.array(AuditLedgerEntrySchema),
   generatedAt: z.string(),
+  canonicalReason: z.string().optional(),
+  cardNetwork: z.string().optional(),
+  gateway: GatewayTypeSchema.optional(),
+  rulePack: RulePackDisplaySchema.optional(),
+  validation: z
+    .object({
+      checks: z.array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          passed: z.boolean(),
+          value: z.string().optional(),
+        })
+      ),
+      allRequiredMet: z.boolean(),
+      missingFields: z.array(z.string()),
+    })
+    .optional(),
+  strategy: z
+    .object({
+      focus: z.string(),
+      rationale: z.string(),
+    })
+    .optional(),
+  rebuttalIterations: z
+    .array(
+      z.object({
+        iteration: z.number(),
+        draft: z.string(),
+        critique: z.string(),
+        approved: z.boolean(),
+      })
+    )
+    .optional(),
 });
 export type VerifiedEvidencePackage = z.infer<typeof VerifiedEvidencePackageSchema>;
 
@@ -251,6 +349,60 @@ export const FulfillmentDetailsSchema = z.object({
 });
 export type FulfillmentDetails = z.infer<typeof FulfillmentDetailsSchema>;
 
+// --- P1: normalization & rules ---
+
+export const CanonicalDisputeReasonSchema = z.enum([
+  "ITEM_NOT_RECEIVED",
+  "ITEM_NOT_AS_DESCRIBED",
+  "FRAUD",
+  "DUPLICATE",
+  "UNRECOGNIZED",
+  "CREDIT_NOT_PROCESSED",
+  "GENERAL",
+]);
+export type CanonicalDisputeReason = z.infer<typeof CanonicalDisputeReasonSchema>;
+
+export const CardNetworkSchema = z.enum([
+  "visa",
+  "mastercard",
+  "amex",
+  "rupay",
+  "unknown",
+]);
+export type CardNetwork = z.infer<typeof CardNetworkSchema>;
+
+export const PlatformTypeSchema = z.enum(["shopify", "mock_commerce"]);
+export type PlatformType = z.infer<typeof PlatformTypeSchema>;
+
+export const EvidenceValidationCheckSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  passed: z.boolean(),
+  value: z.string().optional(),
+});
+export type EvidenceValidationCheck = z.infer<typeof EvidenceValidationCheckSchema>;
+
+export const EvidenceValidationResultSchema = z.object({
+  checks: z.array(EvidenceValidationCheckSchema),
+  allRequiredMet: z.boolean(),
+  missingFields: z.array(z.string()),
+});
+export type EvidenceValidationResult = z.infer<typeof EvidenceValidationResultSchema>;
+
+export const RebuttalStrategySchema = z.object({
+  focus: z.enum(["delivery_proof", "customer_history", "payment_proof", "combined"]),
+  rationale: z.string(),
+});
+export type RebuttalStrategy = z.infer<typeof RebuttalStrategySchema>;
+
+export const RebuttalIterationSchema = z.object({
+  iteration: z.number(),
+  draft: z.string(),
+  critique: z.string(),
+  approved: z.boolean(),
+});
+export type RebuttalIteration = z.infer<typeof RebuttalIterationSchema>;
+
 export const DisputeEventSchema = z.object({
   disputeId: z.string(),
   orderId: z.string(),
@@ -259,7 +411,11 @@ export const DisputeEventSchema = z.object({
   amount: z.number(),
   currency: z.string(),
   deadline: z.string(),
-  platform: z.enum(["shopify"]),
+  platform: PlatformTypeSchema.default("shopify"),
+  gateway: GatewayTypeSchema.optional(),
+  rawReason: z.string().optional(),
+  canonicalReason: CanonicalDisputeReasonSchema.optional(),
+  cardNetwork: CardNetworkSchema.optional(),
 });
 export type DisputeEvent = z.infer<typeof DisputeEventSchema>;
 

@@ -36,8 +36,11 @@ async function main() {
     ),
   ];
 
-  const loopSteps = pkg.ledger.filter((e) =>
-    e.reasoning.includes("Agent loop step")
+  const ruleSteps = pkg.ledger.filter(
+    (e) =>
+      e.reasoning.includes("Rule engine") ||
+      e.reasoning.includes("Rule validation") ||
+      e.reasoning.includes("Deterministic")
   );
 
   console.log("OK p3-integration");
@@ -48,14 +51,13 @@ async function main() {
         disputeId: pkg.disputeId,
         status: pkg.status,
         confidenceScore: pkg.confidenceScore,
+        canonicalReason: pkg.canonicalReason,
+        cardNetwork: pkg.cardNetwork,
+        validationMet: pkg.validation?.allRequiredMet,
         evidenceKeys,
         toolsUsed,
-        investigationLoopSteps: loopSteps.length,
+        ruleEngineSteps: ruleSteps.length,
         ledgerSteps: pkg.ledger.length,
-        loopTimeline: loopSteps.map((e) => ({
-          step: e.step,
-          reasoning: e.reasoning.slice(0, 100),
-        })),
         sampleLedger: pkg.ledger.slice(0, 5).map((e) => ({
           step: e.step,
           tool: e.toolCalled,

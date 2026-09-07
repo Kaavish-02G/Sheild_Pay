@@ -13,5 +13,10 @@ export function toDisputeResponse(doc: DbDispute): Dispute {
     status: doc.status,
     createdAt: doc.createdAt.toISOString(),
     responseText: doc.responseText ?? undefined,
+    gateway: doc.gateway,
+    rawReason: doc.rawReason,
+    canonicalReason: doc.canonicalReason,
+    cardNetwork: doc.cardNetwork,
+    platform: doc.platform,
   };
 }

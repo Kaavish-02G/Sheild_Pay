@@ -1,6 +1,7 @@
 import { DisputeSchema, type Dispute } from "@/shared/schemas";
 import { mockOrderTotal } from "@/shared/mocks/order-variation";
 import { fetchJson, getBaseUrl } from "./http";
+import type { CanonicalDisputeReason, CardNetwork, GatewayType } from "@/shared/schemas";
 
 export interface DisputeContext {
   disputeId: string;
@@ -8,6 +9,10 @@ export interface DisputeContext {
   reason: string;
   amount: number;
   currency: string;
+  canonicalReason?: CanonicalDisputeReason;
+  cardNetwork?: CardNetwork;
+  gateway?: GatewayType;
+  merchantId?: string;
 }
 
 export async function fetchDisputeContext(
@@ -26,12 +31,12 @@ export async function fetchDisputeContext(
   }
 
   console.warn(
-    `[P3] GET /api/core/disputes/${disputeId} unavailable (${result.ok ? "invalid payload" : result.error}) — using minimal context. TODO: needs P1 route`
+    `[P3] GET /api/core/disputes/${disputeId} unavailable (${result.ok ? "invalid payload" : result.error}) — using minimal context.`
   );
 
   return {
     disputeId,
-    orderId: disputeId.startsWith("sim-") ? "1042" : "1042",
+    orderId: "1042",
     reason: "chargeback",
     amount: mockOrderTotal("1042"),
     currency: "USD",
@@ -45,6 +50,10 @@ function toContext(dispute: Dispute): DisputeContext {
     reason: dispute.reason,
     amount: dispute.amount,
     currency: dispute.currency,
+    canonicalReason: dispute.canonicalReason as CanonicalDisputeReason | undefined,
+    cardNetwork: dispute.cardNetwork,
+    gateway: dispute.gateway,
+    merchantId: dispute.merchantId,
   };
 }
 

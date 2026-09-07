@@ -5,6 +5,7 @@ import type { Dispute, MerchantSettings, VerifiedEvidencePackage } from "@/share
 import EvidenceScoreBadge from "./EvidenceScoreBadge";
 import AuditTrailTimeline from "./AuditTrailTimeline";
 import MockEvidenceScreenshots from "./MockEvidenceScreenshots";
+import NetworkRuleBookPanel from "./NetworkRuleBookPanel";
 
 interface DisputePreviewModalProps {
   open: boolean;
@@ -108,9 +109,28 @@ export default function DisputePreviewModal({
               <div>
                 <dt className="text-slate-500 dark:text-slate-400">Reason</dt>
                 <dd className="font-medium capitalize text-slate-900 dark:text-slate-100">
-                  {dispute.reason.replace(/_/g, " ")}
+                  {(evidence.canonicalReason ?? dispute.canonicalReason ?? dispute.reason).replace(
+                    /_/g,
+                    " "
+                  )}
                 </dd>
               </div>
+              {(evidence.cardNetwork ?? dispute.cardNetwork) && (
+                <div>
+                  <dt className="text-slate-500 dark:text-slate-400">Card Network</dt>
+                  <dd className="font-medium uppercase text-slate-900 dark:text-slate-100">
+                    {evidence.cardNetwork ?? dispute.cardNetwork}
+                  </dd>
+                </div>
+              )}
+              {(evidence.gateway ?? dispute.gateway) && (
+                <div>
+                  <dt className="text-slate-500 dark:text-slate-400">Payment Gateway</dt>
+                  <dd className="font-medium capitalize text-slate-900 dark:text-slate-100">
+                    {evidence.gateway ?? dispute.gateway}
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt className="text-slate-500 dark:text-slate-400">Amount</dt>
                 <dd className="font-medium text-slate-900 dark:text-slate-100">
@@ -131,6 +151,99 @@ export default function DisputePreviewModal({
               </div>
             </dl>
           </section>
+
+          <div className="mt-5">
+            <NetworkRuleBookPanel
+              cardNetwork={evidence.cardNetwork ?? dispute.cardNetwork}
+              canonicalReason={evidence.canonicalReason ?? dispute.canonicalReason}
+              rulePack={evidence.rulePack}
+              validation={evidence.validation}
+            />
+          </div>
+
+          {evidence.validation && (
+            <section className="mt-5 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Validation Results (against rule book)
+                </h3>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    evidence.validation.allRequiredMet
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
+                      : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                  }`}
+                >
+                  {evidence.validation.checks.filter((c) => c.passed).length}/
+                  {evidence.validation.checks.length} passed
+                </span>
+              </div>
+              <ul className="mt-3 space-y-2">
+                {evidence.validation.checks.map((check) => (
+                  <li
+                    key={check.id}
+                    className="flex items-start justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700"
+                  >
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-slate-100">
+                        {check.label}
+                      </p>
+                      {check.value && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{check.value}</p>
+                      )}
+                    </div>
+                    <span
+                      className={
+                        check.passed
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-red-600 dark:text-red-400"
+                      }
+                    >
+                      {check.passed ? "Pass" : "Fail"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {evidence.strategy && (
+            <section className="mt-5 rounded-lg border border-violet-200 bg-violet-50 p-4 dark:border-violet-800 dark:bg-violet-900/20">
+              <h3 className="text-sm font-semibold text-violet-900 dark:text-violet-200">
+                AI Strategy
+              </h3>
+              <p className="mt-1 text-xs uppercase tracking-wide text-violet-600 dark:text-violet-400">
+                Focus: {evidence.strategy.focus.replace(/_/g, " ")}
+              </p>
+              <p className="mt-2 text-sm text-violet-900 dark:text-violet-100">
+                {evidence.strategy.rationale}
+              </p>
+            </section>
+          )}
+
+          {evidence.rebuttalIterations && evidence.rebuttalIterations.length > 0 && (
+            <section className="mt-5 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Draft → Critique → Revise
+              </h3>
+              <ul className="mt-3 space-y-3">
+                {evidence.rebuttalIterations.map((iteration) => (
+                  <li
+                    key={iteration.iteration}
+                    className="rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700"
+                  >
+                    <p className="text-xs font-semibold uppercase text-slate-500">
+                      Iteration {iteration.iteration}{" "}
+                      {iteration.approved ? "· Approved" : "· Revised"}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      Critique: {iteration.critique}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section className="mt-5 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
             <div className="flex flex-wrap items-center justify-between gap-3">
