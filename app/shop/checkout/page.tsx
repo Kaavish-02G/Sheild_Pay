@@ -3,12 +3,15 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "../components/CartProvider";
+import { formatCardNumber, inferCardNetwork } from "@/shared/shop/test-cards";
 
 export default function CheckoutPage() {
   const { lines, subtotal, clear } = useCart();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardNetwork, setCardNetwork] = useState("visa");
 
   const shipping = subtotal >= 75 ? 0 : 8;
   const total = subtotal + shipping;
@@ -26,8 +29,11 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           email: form.get("email"),
           name: form.get("name"),
-          cardNetwork: form.get("cardNetwork"),
+          cardNetwork,
           cardNumber: form.get("cardNumber"),
+          expMonth: form.get("expMonth"),
+          expYear: form.get("expYear"),
+          cvc: form.get("cvc"),
           shipping: {
             name: form.get("name"),
             address1: form.get("address1"),
@@ -77,7 +83,8 @@ export default function CheckoutPage() {
             required
             name="email"
             type="email"
-            defaultValue="alex@northline.shop"
+            autoComplete="email"
+            placeholder="you@example.com"
             className="shop-field"
             style={{ marginTop: 8 }}
           />
@@ -85,31 +92,76 @@ export default function CheckoutPage() {
         <section className="shop-card shop-pad">
           <h2 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Shipping</h2>
           <div className="shop-form-2" style={{ marginTop: 8 }}>
-            <input required name="name" defaultValue="Alex Rivera" placeholder="Full name" className="shop-field shop-span-2" />
-            <input required name="address1" defaultValue="184 Market Street" placeholder="Address" className="shop-field shop-span-2" />
-            <input required name="city" defaultValue="San Francisco" placeholder="City" className="shop-field" />
-            <input required name="region" defaultValue="CA" placeholder="State" className="shop-field" />
-            <input required name="postalCode" defaultValue="94103" placeholder="ZIP" className="shop-field shop-span-2" />
+            <input required name="name" autoComplete="name" placeholder="Full name" className="shop-field shop-span-2" />
+            <input required name="address1" autoComplete="street-address" placeholder="Address" className="shop-field shop-span-2" />
+            <input required name="city" autoComplete="address-level2" placeholder="City" className="shop-field" />
+            <input required name="region" autoComplete="address-level1" placeholder="State" className="shop-field" />
+            <input required name="postalCode" autoComplete="postal-code" placeholder="ZIP" className="shop-field shop-span-2" />
           </div>
         </section>
         <section className="shop-card shop-pad">
           <h2 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Payment</h2>
           <p className="shop-muted" style={{ marginTop: 6 }}>
-            Demo checkout — no real charge. Card network drives ShieldPay rules.
+            Enter your card details to complete the order.
           </p>
           <div className="shop-form-2" style={{ marginTop: 8 }}>
-            <select name="cardNetwork" defaultValue="visa" className="shop-field">
+            <select
+              name="cardNetwork"
+              value={cardNetwork}
+              onChange={(event) => setCardNetwork(event.target.value)}
+              className="shop-field"
+            >
               <option value="visa">Visa</option>
               <option value="mastercard">Mastercard</option>
               <option value="amex">Amex</option>
               <option value="rupay">RuPay</option>
             </select>
-            <input required name="cardNumber" defaultValue="4242424242424242" className="shop-field" />
+            <input
+              required
+              name="cardNumber"
+              inputMode="numeric"
+              autoComplete="cc-number"
+              placeholder="Card number"
+              value={cardNumber}
+              onChange={(event) => {
+                const next = formatCardNumber(event.target.value);
+                setCardNumber(next);
+                setCardNetwork(inferCardNetwork(next, cardNetwork));
+              }}
+              className="shop-field"
+            />
+            <input
+              required
+              name="expMonth"
+              inputMode="numeric"
+              autoComplete="cc-exp-month"
+              placeholder="MM"
+              maxLength={2}
+              className="shop-field"
+            />
+            <input
+              required
+              name="expYear"
+              inputMode="numeric"
+              autoComplete="cc-exp-year"
+              placeholder="YYYY"
+              maxLength={4}
+              className="shop-field"
+            />
+            <input
+              required
+              name="cvc"
+              inputMode="numeric"
+              autoComplete="cc-csc"
+              placeholder="CVC"
+              maxLength={4}
+              className="shop-field shop-span-2"
+            />
           </div>
         </section>
         {error && <p style={{ color: "#b91c1c", fontSize: 14 }}>{error}</p>}
-        <button type="submit" disabled={busy} className="shop-btn-primary">
-          {busy ? "Placing order…" : `Pay $${total.toFixed(2)}`}
+        <button type="submit" disabled={busy} className="shop-btn-primary shop-btn-full">
+          {busy ? "Processing…" : `Pay $${total.toFixed(2)}`}
         </button>
       </form>
       <aside className="shop-card shop-pad">
