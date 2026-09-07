@@ -107,3 +107,25 @@ export function mapScoreToStatus(
   }
   return "insufficient";
 }
+
+export function scoreValidatedEvidence(
+  evidenceGathered: Record<string, unknown>,
+  validation: { checks: { passed: boolean }[]; allRequiredMet: boolean } | undefined,
+  disputeReason: string
+): number {
+  let score = scoreEvidence(evidenceGathered, disputeReason);
+
+  if (validation) {
+    const passed = validation.checks.filter((check) => check.passed).length;
+    const total = validation.checks.length;
+    if (total > 0) {
+      const ratio = passed / total;
+      score = Math.round(score * 0.6 + ratio * 40);
+    }
+    if (validation.allRequiredMet) {
+      score = Math.min(100, score + 5);
+    }
+  }
+
+  return Math.max(0, Math.min(100, score));
+}

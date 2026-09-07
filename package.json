@@ -15,7 +15,9 @@
     "test:p3": "node scripts/test.mjs p3",
     "test:p4": "node scripts/test.mjs p4",
     "test:all": "node scripts/test.mjs all",
-    "shopify:dev": "shopify app dev"
+    "shopify:dev": "shopify app dev",
+    "mock-commerce": "node integrations/mock-commerce/server.mjs",
+    "test:architecture": "tsx scripts/architecture-e2e-test.ts"
   },
   "dependencies": {
     "ai": "^7.0.93",

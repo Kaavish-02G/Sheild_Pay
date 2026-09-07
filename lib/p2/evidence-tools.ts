@@ -153,21 +153,17 @@ export async function getPaymentDetails(orderId: string): Promise<PaymentDetails
     console.warn(
       `[P2] ${result.error} — using mock payment fixture. TODO: needs P1 route`
     );
-    return parseOrThrow(
-      PaymentDetailsSchema,
-      "PaymentDetails",
-      mockPaymentDetails(orderId)
-    );
+    return PaymentDetailsSchema.parse(mockPaymentDetails(orderId));
   }
 
   const payload = result.data.payment ?? result.data;
-  const parsed = parseOrThrow(PaymentDetailsSchema, "PaymentDetails", payload);
+  const parsed = PaymentDetailsSchema.parse(payload);
   const order = await getOrderDetails(orderId);
-  return {
+  return PaymentDetailsSchema.parse({
     ...parsed,
     amount: order.totalAmount,
     currency: order.currency,
-  };
+  });
 }
 
 /** Resolve customer history from an order id (used by HTTP tool routes). */

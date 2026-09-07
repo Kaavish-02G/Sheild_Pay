@@ -3,7 +3,8 @@ import { z } from "zod";
 import { shopifyAdapter } from "@/lib/adapters/shopify";
 import { handleDisputeEvent } from "@/lib/core/orchestrator";
 import { fetchOrderForSimulate } from "@/lib/core/order-service";
-import { getMerchantByShopDomain, cacheOrder, upsertMerchant } from "@/lib/core/models";
+import { buildDisputeEvent } from "@/lib/core/pg-ingest";
+import { getMerchantByShopDomain, cacheOrder, upsertMerchant, upsertMockMerchant } from "@/lib/core/models";
 import { randomUUID } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,10 @@ const SimulateDisputeSchema = z.object({
 });
 
 async function resolveMerchant(shopDomain: string) {
+  if (process.env.MOCK_COMMERCE_MODE === "true" || process.env.PLATFORM_MOCK_MODE === "true") {
+    return upsertMockMerchant(shopDomain);
+  }
+
   let merchant = await getMerchantByShopDomain(shopDomain);
   if (merchant) {
     return merchant;
@@ -72,17 +77,23 @@ export async function POST(request: NextRequest) {
 
     const deadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const event = {
+    const event = buildDisputeEvent({
       disputeId: `sim-${randomUUID()}`,
       orderId: order.orderId,
-      merchantId: merchant._id.toString(),
-      reason,
+      merchantId: merchant.shopDomain,
+      gateway: "stripe",
+      rawReason: reason,
       amount,
       currency: order.currency,
       deadline,
-      platform: "shopify" as const,
-    };
+      platform:
+        process.env.MOCK_COMMERCE_MODE === "true" ||
+        process.env.PLATFORM_MOCK_MODE === "true"
+          ? "mock_commerce"
+          : "shopify",
+    });
 
+    event.merchantId = merchant._id.toString();
     await handleDisputeEvent(event);
 
     return NextResponse.json({

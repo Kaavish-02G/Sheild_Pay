@@ -11,7 +11,7 @@ import {
   type AutomationResult,
   type VerifiedEvidencePackage,
 } from "@/shared/schemas";
-import { toDashboardEvidencePackage } from "./evidence-adapter";
+import { toDashboardEvidencePackage, isAgentPackage } from "./evidence-adapter";
 import { runAutomationPipeline } from "./automation";
 
 function getBaseUrl(): string {
@@ -75,10 +75,10 @@ export async function runServerAutomation(
   }
 
   const dispute = toDisputeResponse(disputeDoc);
-  const evidence = toDashboardEvidencePackage(
-    evidenceDoc.package,
-    dispute.reason
-  );
+  const rawPkg = evidenceDoc.package;
+  const agentResponseText =
+    isAgentPackage(rawPkg) && rawPkg.responseText ? rawPkg.responseText : undefined;
+  const evidence = toDashboardEvidencePackage(rawPkg, dispute.reason);
 
   const merchant = await getMerchant(disputeDoc.merchantId);
   const settings = MerchantSettingsSchema.parse(
@@ -86,7 +86,12 @@ export async function runServerAutomation(
   );
 
   const result = await runAutomationPipeline(
-    { dispute, evidence, settings, responseText: dispute.responseText ?? undefined },
+    {
+      dispute,
+      evidence,
+      settings,
+      responseText: agentResponseText ?? dispute.responseText ?? undefined,
+    },
     submitEvidencePackage
   );
 

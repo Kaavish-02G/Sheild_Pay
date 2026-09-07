@@ -13,7 +13,7 @@ export interface MerchantSettings {
 
 export interface Merchant {
   _id: ObjectId;
-  platform: "shopify";
+  platform: "shopify" | "mock_commerce";
   shopDomain: string;
   accessToken: string;
   settings: MerchantSettings;
@@ -45,6 +45,11 @@ export interface Dispute {
   status: DisputeStatus;
   createdAt: Date;
   responseText?: string;
+  gateway?: "stripe" | "paypal" | "razorpay";
+  rawReason?: string;
+  canonicalReason?: string;
+  cardNetwork?: "visa" | "mastercard" | "amex" | "rupay" | "unknown";
+  platform?: "shopify" | "mock_commerce";
 }
 
 export interface Evidence {
@@ -143,6 +148,22 @@ export async function getMerchant(id: string): Promise<Merchant | null> {
 export async function getMerchantByShopDomain(shopDomain: string): Promise<Merchant | null> {
   const db = await getDb();
   return db.collection<Merchant>("merchants").findOne({ shopDomain });
+}
+
+export async function upsertMockMerchant(merchantId: string): Promise<Merchant> {
+  const db = await getDb();
+  const result = await db.collection<Merchant>("merchants").findOneAndUpdate(
+    { shopDomain: merchantId },
+    {
+      $set: { accessToken: "mock-commerce-token", platform: "mock_commerce" as const },
+      $setOnInsert: { settings: DEFAULT_SETTINGS },
+    },
+    { upsert: true, returnDocument: "after" }
+  );
+  if (!result) {
+    throw new Error(`Failed to upsert mock merchant for ${merchantId}`);
+  }
+  return result;
 }
 
 export async function upsertMerchant(

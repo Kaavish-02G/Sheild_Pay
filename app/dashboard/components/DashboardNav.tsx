@@ -13,6 +13,12 @@ export default function DashboardNav() {
         </Link>
         <nav className="flex items-center gap-6">
           <Link
+            href="/shop"
+            className="text-sm font-medium text-slate-600 transition hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
+          >
+            Store
+          </Link>
+          <Link
             href="/dashboard"
             className="text-sm font-medium text-slate-600 transition hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
           >
