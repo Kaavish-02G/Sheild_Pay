@@ -23,6 +23,12 @@ export const mockGateway: GatewayAdapter = {
       gatewayReference: `pg-mock-${disputeId.slice(0, 12)}`,
     };
   },
+
+  async refund(orderId: string): Promise<SubmissionResult> {
+    const reference = `pg-mock-refund-${orderId.replace(/[^a-z0-9-]/gi, "").slice(0, 20)}`;
+    console.info(`[P2 mock PG] Simulated refund for order ${orderId} (${reference})`);
+    return { success: true, gatewayReference: reference };
+  },
 };
 
 export function useMockPaymentGateway(): boolean {

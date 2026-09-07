@@ -3,22 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
-const REASONS = [
-  { id: "product_not_received", label: "Item not received" },
-  { id: "fraudulent", label: "I didn't authorize this" },
-  { id: "duplicate", label: "Duplicate charge" },
-  { id: "product_unacceptable", label: "Not as described" },
-  { id: "credit_not_processed", label: "Refund not processed" },
-];
+import { MOCK_ALERT_DISCLAIMER } from "@/shared/schemas";
 
 export default function OrderPage() {
   const params = useParams();
   const [order, setOrder] = useState<Record<string, unknown> | null>(null);
-  const [reason, setReason] = useState("product_not_received");
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ disputeId: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/shop/orders/${params.id}`)
@@ -33,25 +22,10 @@ export default function OrderPage() {
   const items = (order.items as Array<{ name: string; quantity: number; price: number }>) ?? [];
   const payment = order.payment as { cardNetwork?: string; last4?: string } | undefined;
   const tracking = order.tracking as { trackingNumber?: string; status?: string } | undefined;
-
-  async function fileDispute() {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/shop/orders/${params.id}/dispute`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not file dispute");
-      setResult({ disputeId: data.disputeId });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not file dispute");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const shieldpay = order.shieldpay as
+    | { disputeId?: string; alert?: { outcome?: string; message?: string } }
+    | undefined;
+  const disputeId = shieldpay?.disputeId;
 
   return (
     <div className="shop-narrow">
@@ -77,48 +51,28 @@ export default function OrderPage() {
       </p>
 
       <section className="shop-card shop-pad" style={{ marginTop: "2.5rem" }}>
-        <h2 style={{ margin: 0, fontSize: "1.5rem" }}>File a chargeback dispute</h2>
+        <h2 style={{ margin: 0, fontSize: "1.5rem" }}>Sent to the merchant</h2>
         <p className="shop-lede">
-          This is the customer-side filing. ShieldPay ingests it as a Stripe-shaped dispute and
-          runs the Visa/Mastercard rule book on the merchant dashboard.
+          Checkout automatically forwarded a simulated pre-dispute signal and a dispute case to
+          ShieldPay. Nothing else to file from this page.
         </p>
-        <label className="shop-kicker" style={{ display: "block", marginTop: 16 }}>
-          Reason
-          <select
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            className="shop-field"
-            style={{ marginTop: 8, textTransform: "none", letterSpacing: "normal" }}
-          >
-            {REASONS.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {error && <p style={{ marginTop: 12, color: "#b91c1c", fontSize: 14 }}>{error}</p>}
-        {result ? (
-          <p className="shop-lede">
-            Dispute filed.{" "}
-            <Link
-              href={`/dashboard/disputes/${encodeURIComponent(result.disputeId)}?preview=1`}
-              className="shop-muted-link"
-            >
-              Open in ShieldPay merchant dashboard
-            </Link>
-          </p>
-        ) : (
-          <button
-            type="button"
-            onClick={fileDispute}
-            disabled={busy}
-            className="shop-btn-primary"
-            style={{ marginTop: 20 }}
-          >
-            {busy ? "Filing…" : "Draft and submit dispute"}
-          </button>
-        )}
+        <p className="shop-muted" style={{ marginTop: 8 }}>
+          {MOCK_ALERT_DISCLAIMER}
+        </p>
+        {shieldpay?.alert?.message ? (
+          <p className="shop-lede">Mock Alerts: {shieldpay.alert.message}</p>
+        ) : null}
+        <Link
+          href={
+            disputeId
+              ? `/dashboard/disputes/${encodeURIComponent(disputeId)}?preview=1`
+              : "/dashboard"
+          }
+          className="shop-btn-primary"
+          style={{ marginTop: 20 }}
+        >
+          Open merchant dashboard
+        </Link>
       </section>
     </div>
   );

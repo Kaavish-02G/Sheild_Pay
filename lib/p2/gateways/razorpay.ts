@@ -86,4 +86,11 @@ export const razorpayGateway: GatewayAdapter = {
       return { success: false, error: normalizeGatewayError(error) };
     }
   },
+
+  async refund(orderId: string): Promise<SubmissionResult> {
+    return {
+      success: false,
+      error: `Razorpay refund for order ${orderId} is not configured in this demo adapter`,
+    };
+  },
 };

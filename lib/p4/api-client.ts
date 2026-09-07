@@ -173,6 +173,9 @@ export async function fetchMerchantSettings(
         requireApprovalHighValue: true,
         requireApprovalWeakEvidence: true,
         requireApprovalMissingDeliveryProof: false,
+        paymentProcessor: "stripe",
+        statementDescriptor: "NORTHLINE",
+        mockAlertsEnabled: true,
       },
       persisted: false,
     };

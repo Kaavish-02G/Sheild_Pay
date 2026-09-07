@@ -6,6 +6,7 @@ import { fetchDisputes, fetchDisputeSnapshot } from "@/lib/p4/api-client";
 import DisputeCard from "./components/DisputeCard";
 import SimulateDisputeModal from "./components/SimulateDisputeModal";
 import ReviewNotificationBanner from "./components/ReviewNotificationBanner";
+import MockAlertsPanel from "./components/MockAlertsPanel";
 
 export default function DashboardPage() {
   const [disputes, setDisputes] = useState<Dispute[]>([]);
@@ -51,7 +52,8 @@ export default function DashboardPage() {
             Disputes
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Fully agentic dispute handling — green tag = sent to PG, red tag = needs your action.
+            Cases arrive automatically when a Northline order is placed. Green tag = sent to PG,
+            red tag = needs your action.
           </p>
         </div>
         <SimulateDisputeModal onSuccess={loadDisputes} />
@@ -65,7 +67,8 @@ export default function DashboardPage() {
         <div className="mt-10 rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center dark:border-slate-600 dark:bg-slate-800">
           <p className="text-slate-500 dark:text-slate-400">No disputes yet.</p>
           <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
-            Use &ldquo;Simulate Incoming Dispute&rdquo; to create a test case.
+            Place an order in the <a href="/shop" className="underline">Northline store</a> — the
+            merchant desk is populated automatically.
           </p>
         </div>
       ) : (
@@ -79,6 +82,8 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+
+      <MockAlertsPanel />
     </div>
   );
 }

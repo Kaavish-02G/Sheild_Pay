@@ -5,6 +5,7 @@ import {
   toMerchantSettingsResponse,
   updateMerchantSettings,
   upsertMerchant,
+  upsertMockMerchant,
 } from "@/lib/core/models";
 import { MerchantSettingsSchema } from "@/shared/schemas";
 
@@ -14,6 +15,10 @@ async function resolveMerchant(id: string) {
   let merchant = await getMerchant(id);
   if (merchant) {
     return merchant;
+  }
+
+  if (process.env.MOCK_COMMERCE_MODE === "true" || process.env.PLATFORM_MOCK_MODE === "true") {
+    return upsertMockMerchant(id);
   }
 
   if (process.env.SHOPIFY_MOCK_MODE === "true" || process.env.NODE_ENV === "test") {
