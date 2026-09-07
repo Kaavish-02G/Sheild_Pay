@@ -63,29 +63,22 @@ export default function DisputePreviewModal({
       role="presentation"
     >
       <div
-        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-slate-900"
+        className="dash-card flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="dispute-preview-title"
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+        <div className="flex items-center justify-between border-b border-[var(--dash-line)] px-6 py-4">
           <div>
-            <h2
-              id="dispute-preview-title"
-              className="text-lg font-semibold text-slate-900 dark:text-slate-100"
-            >
-              Dispute Preview
+            <h2 id="dispute-preview-title" className="dash-serif text-2xl">
+              Dispute preview
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Full case details — AI handles disputes automatically when thresholds are met.
+            <p className="dash-muted text-sm">
+              Full case file — auto-submit only when thresholds are met.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
+          <button type="button" onClick={onClose} className="dash-btn-ghost">
             Close
           </button>
         </div>
@@ -208,10 +201,8 @@ export default function DisputePreviewModal({
           )}
 
           {evidence.strategy && (
-            <section className="mt-5 rounded-lg border border-violet-200 bg-violet-50 p-4 dark:border-violet-800 dark:bg-violet-900/20">
-              <h3 className="text-sm font-semibold text-violet-900 dark:text-violet-200">
-                AI Strategy
-              </h3>
+            <section className="dash-card mt-5 p-4">
+              <h3 className="text-sm font-semibold">AI strategy</h3>
               <p className="mt-1 text-xs uppercase tracking-wide text-violet-600 dark:text-violet-400">
                 Focus: {evidence.strategy.focus.replace(/_/g, " ")}
               </p>
@@ -369,20 +360,20 @@ export default function DisputePreviewModal({
               type="button"
               onClick={onSendToPg}
               disabled={sendingToPg || evidence.evidence.length === 0}
-              className="flex-1 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+              className="dash-btn-primary flex-1 disabled:opacity-50"
             >
               {sendingToPg ? "Sending to PG…" : "Send Request to PG"}
             </button>
           )}
           {(pgSent || dispute.status === "submitted") && (
-            <p className="flex-1 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+            <p className="dash-banner dash-banner-ok flex-1 text-sm">
               Submitted to payment gateway{gatewayReference ? `: ${gatewayReference}` : ""}
             </p>
           )}
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="dash-btn-ghost"
           >
             Close Preview
           </button>

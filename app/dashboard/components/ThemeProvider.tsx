@@ -17,16 +17,13 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
-
 const STORAGE_KEY = "shieldpay-theme";
 
 function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "light";
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return "light";
 }
 
 function applyTheme(theme: Theme) {
@@ -55,9 +52,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     <ThemeContext.Provider
       value={{ theme, isDark: theme === "dark", toggleTheme }}
     >
-      <div className="min-h-screen bg-slate-50 text-slate-900 antialiased transition-colors dark:bg-slate-900 dark:text-slate-100">
-        {children}
-      </div>
+      {children}
     </ThemeContext.Provider>
   );
 }

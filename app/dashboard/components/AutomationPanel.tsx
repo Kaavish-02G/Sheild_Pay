@@ -74,29 +74,10 @@ function PreviewButton({
 
 }) {
 
-  const classes =
-
-    variant === "red"
-
-      ? "bg-red-600 hover:bg-red-700 text-white"
-
-      : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700";
-
-
+  const classes = variant === "red" ? "dash-btn-danger" : "dash-btn-ghost";
 
   return (
-
-    <button
-
-      type="button"
-
-      onClick={onClick}
-
-      disabled={disabled}
-
-      className={`rounded-lg px-5 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 ${classes}`}
-
-    >
+    <button type="button" onClick={onClick} disabled={disabled} className={classes}>
 
       Preview
 
@@ -136,7 +117,7 @@ function SendToPgButton({
 
       disabled={disabled || loading}
 
-      className="rounded-lg bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+      className="dash-btn-primary disabled:cursor-not-allowed"
 
     >
 
@@ -540,19 +521,14 @@ export default function AutomationPanel({
 
       <>
 
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-6 dark:border-blue-800 dark:bg-blue-900/20">
+        <div className="dash-banner dash-banner-info">
 
           <div className="flex flex-wrap items-start justify-between gap-4">
 
             <div>
 
-              <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200">
-
-                AI Agent Running…
-
-              </h3>
-
-              <p className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+              <h3 className="dash-serif text-2xl">Investigation running</h3>
+              <p className="dash-muted mt-2 text-sm leading-6">
 
                 The AI is investigating and will only auto-submit to the payment gateway when
                 your evidence and amount thresholds are met.
@@ -583,19 +559,14 @@ export default function AutomationPanel({
 
       <>
 
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-6 dark:border-blue-800 dark:bg-blue-900/20">
+        <div className="dash-banner dash-banner-info">
 
           <div className="flex flex-wrap items-start justify-between gap-4">
 
             <div>
 
-              <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200">
-
-                AI Agent Running…
-
-              </h3>
-
-              <p className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+              <h3 className="dash-serif text-2xl">Investigation running</h3>
+              <p className="dash-muted mt-2 text-sm leading-6">
 
                 Investigating evidence and generating a response — PG submission only if thresholds are met.
 
@@ -655,19 +626,15 @@ export default function AutomationPanel({
 
       <>
 
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-900/20">
+        <div className="dash-banner dash-banner-warn">
 
           <div className="flex flex-wrap items-start justify-between gap-4">
 
             <div className="flex-1">
 
-              <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-300">
-                Needs Intervention — Low Evidence Score
-              </h3>
-
-              <p className="mt-2 text-sm text-amber-800 dark:text-amber-300">{result.message}</p>
-
-              <p className="mt-3 text-sm text-amber-700 dark:text-amber-400">
+              <h3 className="dash-serif text-2xl">Needs intervention</h3>
+              <p className="mt-2 text-sm leading-6">{result.message}</p>
+              <p className="mt-3 text-sm">
 
                 Score: <EvidenceScoreBadge score={evidence.confidenceScore} size="sm" /> (minimum:{" "}
 
@@ -685,7 +652,7 @@ export default function AutomationPanel({
 
               {toast && (
 
-                <div className="mt-4 rounded-md bg-amber-100 px-4 py-3 text-sm text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
+                <div className="dash-banner mt-4 text-sm">
 
                   {toast}
 
@@ -715,21 +682,18 @@ export default function AutomationPanel({
 
       <>
 
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 dark:border-emerald-800 dark:bg-emerald-900/20">
+        <div className="dash-banner dash-banner-ok">
 
           <div className="flex flex-wrap items-start justify-between gap-4">
 
             <div className="flex-1">
 
-              <h3 className="text-lg font-semibold text-emerald-900 dark:text-emerald-300">
-                Auto-Submitted to Payment Gateway
-              </h3>
-
-              <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-400">{result.message}</p>
+              <h3 className="dash-serif text-2xl">Submitted to payment gateway</h3>
+              <p className="mt-2 text-sm leading-6">{result.message}</p>
 
               {gatewayReference && (
 
-                <p className="mt-2 font-mono text-xs text-emerald-600 dark:text-emerald-500">
+                <p className="mt-2 font-mono text-xs">
 
                   Gateway ref: {gatewayReference}
 
@@ -775,21 +739,15 @@ export default function AutomationPanel({
 
       <>
 
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-900/20">
+        <div className="dash-banner dash-banner-warn">
 
           <div className="flex flex-wrap items-start justify-between gap-4">
 
             <div className="flex-1">
 
-              <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-300">
-
-                Merchant Review Required
-
-              </h3>
-
-              <p className="mt-2 text-sm text-amber-800 dark:text-amber-300">{result.message}</p>
-
-              <p className="mt-3 text-sm text-amber-700 dark:text-amber-400">
+              <h3 className="dash-serif text-2xl">Merchant review required</h3>
+              <p className="mt-2 text-sm leading-6">{result.message}</p>
+              <p className="mt-3 text-sm">
 
                 Evidence confidence:{" "}
 
@@ -809,7 +767,7 @@ export default function AutomationPanel({
 
                   disabled={submitting || !responseText}
 
-                  className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="dash-btn-primary disabled:cursor-not-allowed"
 
                 >
 
@@ -823,7 +781,7 @@ export default function AutomationPanel({
 
               {toast && (
 
-                <div className="mt-4 rounded-md bg-amber-100 px-4 py-3 text-sm text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
+                <div className="dash-banner mt-4 text-sm">
 
                   {toast}
 
@@ -851,19 +809,14 @@ export default function AutomationPanel({
 
     <>
 
-      <div className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+      <div className="dash-card p-6">
 
         <div className="flex flex-wrap items-start justify-between gap-4">
 
           <div>
 
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-
-              Automation Paused
-
-            </h3>
-
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{result.message}</p>
+            <h3 className="dash-serif text-2xl">Automation paused</h3>
+            <p className="dash-muted mt-2 text-sm leading-6">{result.message}</p>
 
             <div className="mt-4 flex flex-wrap gap-3">
 
@@ -875,7 +828,7 @@ export default function AutomationPanel({
 
                 onClick={runAutomation}
 
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                className="dash-btn-primary"
 
               >
 

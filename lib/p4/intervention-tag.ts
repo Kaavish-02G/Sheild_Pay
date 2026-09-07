@@ -18,14 +18,12 @@ export const INTERVENTION_TAG: Record<
 > = {
   auto_sent: {
     label: "Sent to PG",
-    className:
-      "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-800",
-    borderClassName: "border-l-4 border-l-emerald-500",
+    className: "dash-chip dash-chip-ok",
+    borderClassName: "border-l-[3px] border-l-[var(--dash-ok)]",
   },
   needs_intervention: {
     label: "Needs intervention",
-    className:
-      "bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/40 dark:text-red-300 dark:ring-red-800",
-    borderClassName: "border-l-4 border-l-red-500",
+    className: "dash-chip dash-chip-bad",
+    borderClassName: "border-l-[3px] border-l-[var(--dash-bad)]",
   },
 };

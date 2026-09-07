@@ -126,140 +126,115 @@ export default function MockAlertsPanel() {
       : "0,20 220,20";
 
   return (
-    <section className="mt-12">
-      <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-100">
+    <section>
+      <div className="dash-banner dash-banner-info text-sm leading-6">
         {MOCK_ALERT_DISCLAIMER}
       </div>
 
-      <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+      <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
-            ShieldPay Mock Alerts
-          </p>
-          <h2 className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Simulated Pre-Dispute Alerts
-          </h2>
-          <p className="mt-1 max-w-xl text-sm text-slate-500 dark:text-slate-400">
-            Auto-refunds weak cases before a chargeback is filed. Strong delivery proof is left
-            for the dispute desk to contest.
+          <p className="dash-kicker">ShieldPay Mock Alerts</p>
+          <h2 className="dash-title mt-2">Simulated pre-dispute</h2>
+          <p className="dash-muted mt-2 max-w-xl text-sm leading-6">
+            Auto-refunds weak cases before a chargeback is filed. Strong delivery proof is
+            left for the dispute desk to contest.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-600 dark:text-slate-300">Mock Alerts</span>
+          <span className="text-sm">Mock Alerts</span>
           <button
             type="button"
             role="switch"
             aria-checked={enabled}
             onClick={() => void toggleEnabled()}
-            className={`relative h-7 w-12 rounded-full transition ${
-              enabled ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-600"
-            }`}
+            className="dash-switch"
           >
-            <span
-              className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition ${
-                enabled ? "left-5" : "left-0.5"
-              }`}
-            />
+            <span />
           </button>
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600"
-          >
+          <button type="button" onClick={() => void load()} className="dash-btn-ghost">
             Refresh
           </button>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
         {(
           [
-            ["Auto-refunded", metrics.refunded, "text-emerald-700 dark:text-emerald-300"],
-            ["Contesting", metrics.skipped, "text-sky-700 dark:text-sky-300"],
-            ["Already handled", metrics.already_handled, "text-slate-700 dark:text-slate-200"],
+            ["Auto-refunded", metrics.refunded],
+            ["Contesting", metrics.skipped],
+            ["Already handled", metrics.already_handled],
           ] as const
-        ).map(([label, data, color]) => (
-          <div
-            key={label}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800"
-          >
-            <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
-            <p className={`mt-2 text-3xl font-bold ${color}`}>{data.count}</p>
-            <p className="mt-1 text-sm text-slate-500">${data.total.toFixed(2)}</p>
+        ).map(([label, data]) => (
+          <div key={label} className="dash-card p-5">
+            <p className="dash-muted text-sm">{label}</p>
+            <p className="dash-serif mt-2 text-4xl tabular">{data.count}</p>
+            <p className="dash-muted mt-1 text-sm tabular">${data.total.toFixed(2)}</p>
           </div>
         ))}
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">How it works</h3>
-          <ol className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs text-white">
-                1
-              </span>
-              Checkout emits a simulated pre-dispute signal.
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs text-white">
-                2
-              </span>
-              ShieldPay matches the Northline order and scores tracking.
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs text-white">
-                3
-              </span>
-              Weak evidence auto-refunds; strong evidence is contested on the dispute.
-            </li>
+        <div className="dash-card p-6">
+          <h3 className="text-sm font-semibold">How it works</h3>
+          <ol className="dash-muted mt-4 space-y-4 text-sm leading-6">
+            {[
+              "Checkout emits a simulated pre-dispute signal.",
+              "ShieldPay matches the Northline order and scores tracking.",
+              "Weak evidence auto-refunds; strong evidence is contested on the dispute.",
+            ].map((step, i) => (
+              <li key={step} className="flex gap-3">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--dash-line-strong)] text-[11px] text-[var(--dash-ink)]">
+                  {i + 1}
+                </span>
+                {step}
+              </li>
+            ))}
           </ol>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Prevention trend
-          </h3>
-          <p className="mt-1 text-xs text-slate-400">Auto-refunds vs contesting (recent alerts)</p>
+        <div className="dash-card p-6">
+          <h3 className="text-sm font-semibold">Prevention trend</h3>
+          <p className="dash-muted mt-1 text-xs">Auto-refunds vs contesting (recent alerts)</p>
           <svg viewBox="0 0 220 40" className="mt-4 h-24 w-full" aria-hidden>
             <polyline
               fill="none"
-              stroke="#2563eb"
-              strokeWidth="3"
+              stroke="currentColor"
+              strokeWidth="2"
               points={points}
+              className="text-[var(--dash-gold)]"
             />
             <polygon
-              fill="rgba(37,99,235,0.12)"
+              fill="currentColor"
+              className="text-[var(--dash-gold)] opacity-15"
               points={`0,40 ${points} 220,40`}
             />
           </svg>
           {alerts.some((a) => a.outcome === "refunded") ? (
-            <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-800 dark:bg-red-950/40 dark:text-red-200">
+            <p className="dash-banner dash-banner-warn mt-3 text-xs leading-5">
               Auto-refunds in this demo prevented follow-on chargebacks for weak-evidence orders.
             </p>
           ) : (
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="dash-muted mt-2 text-xs">
               Place a Northline order to plot simulated prevention data.
             </p>
           )}
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-          Setup your payment processors
-        </h3>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Select the processor ShieldPay should use when submitting evidence. Demo Connect stores
-          the choice only — no live OAuth.
+      <div className="dash-card mt-6 p-6">
+        <h3 className="dash-serif text-2xl">Payment processors</h3>
+        <p className="dash-muted mt-1 text-sm leading-6">
+          Select the processor ShieldPay should use when submitting evidence. Demo Connect
+          stores the choice only — no live OAuth.
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+          <label className="text-sm font-medium">
             Payment processor *
             <select
               value={processor}
               onChange={(e) =>
                 setProcessor(e.target.value as "stripe" | "paypal" | "razorpay")
               }
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
+              className="dash-select mt-1"
             >
               <option value="stripe">Stripe</option>
               <option value="paypal">PayPal</option>
@@ -270,20 +245,20 @@ export default function MockAlertsPanel() {
             type="button"
             onClick={() => void saveProcessor()}
             disabled={saving}
-            className="self-end rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+            className="dash-btn-primary self-end"
           >
             {saving ? "Saving…" : connected ? "Connected" : "Connect"}
           </button>
         </div>
-        <label className="mt-4 block text-sm font-medium text-slate-700 dark:text-slate-200">
+        <label className="mt-4 block text-sm font-medium">
           Statement descriptor *
-          <p className="mt-1 font-normal text-xs text-slate-500">
+          <p className="dash-muted mt-1 font-normal text-xs">
             Short name that appears on the customer&apos;s card statement for this demo store.
           </p>
           <input
             value={descriptor}
             onChange={(e) => setDescriptor(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
+            className="dash-input mt-2"
           />
         </label>
         {showExtra ? (
@@ -291,62 +266,60 @@ export default function MockAlertsPanel() {
             value={extraDescriptor}
             onChange={(e) => setExtraDescriptor(e.target.value)}
             placeholder="Second descriptor"
-            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
+            className="dash-input mt-2"
           />
         ) : (
           <button
             type="button"
             onClick={() => setShowExtra(true)}
-            className="mt-2 text-sm font-medium text-blue-600"
+            className="mt-3 text-sm font-medium text-[var(--dash-gold)]"
           >
             + Add descriptor
           </button>
         )}
       </div>
 
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Recent Mock Alerts</h3>
+      <div className="dash-card mt-6 p-6">
+        <h3 className="text-sm font-semibold">Recent Mock Alerts</h3>
         {loading ? (
-          <p className="mt-4 text-sm text-slate-400">Loading…</p>
+          <p className="dash-muted mt-4 text-sm">Loading…</p>
         ) : alerts.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-500">
+          <p className="dash-muted mt-4 text-sm">
             No simulated signals yet. Place an order in the Northline store.
           </p>
         ) : (
-          <ul className="mt-4 divide-y divide-slate-200 dark:divide-slate-700">
+          <ul className="mt-2 divide-y divide-[var(--dash-line)]">
             {alerts.map((alert) => {
               const disputeId = disputeByOrder[alert.orderId];
               return (
                 <li
                   key={alert.idempotencyKey}
-                  className="flex flex-wrap items-center justify-between gap-3 py-3"
+                  className="flex flex-wrap items-center justify-between gap-3 py-4"
                 >
                   <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {alert.orderId}
-                    </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-sm font-medium">{alert.orderId}</p>
+                    <p className="dash-muted text-xs">
                       {alert.riskReason} · ${dollars(alert.amount).toFixed(2)} ·{" "}
                       {new Date(alert.createdAt).toLocaleString()}
                     </p>
-                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{alert.message}</p>
+                    <p className="dash-muted mt-1 text-xs leading-5">{alert.message}</p>
                     {disputeId ? (
                       <Link
                         href={`/dashboard/disputes/${encodeURIComponent(disputeId)}`}
-                        className="mt-1 inline-block text-xs font-medium text-blue-600"
+                        className="mt-1 inline-block text-xs font-medium text-[var(--dash-gold)]"
                       >
                         Open dispute
                       </Link>
                     ) : null}
                   </div>
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    className={
                       alert.outcome === "refunded"
-                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
+                        ? "dash-chip dash-chip-ok"
                         : alert.outcome === "skipped"
-                          ? "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200"
-                          : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
-                    }`}
+                          ? "dash-chip"
+                          : "dash-chip dash-chip-warn"
+                    }
                   >
                     {outcomeLabel(alert.outcome)}
                   </span>

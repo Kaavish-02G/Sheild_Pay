@@ -5,9 +5,7 @@ export default function Page() {
   return (
     <Suspense
       fallback={
-        <div className="text-center text-slate-400 dark:text-slate-500">
-          Opening live agent view…
-        </div>
+        <div className="dash-muted text-sm">Opening case…</div>
       }
     >
       <DisputeDetailPage />
