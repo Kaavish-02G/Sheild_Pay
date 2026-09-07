@@ -9,6 +9,11 @@ export interface MerchantSettings {
   reviewAmountLimit: number;
   requireApprovalHighValue: boolean;
   requireApprovalWeakEvidence: boolean;
+  requireApprovalMissingDeliveryProof?: boolean;
+  paymentProcessor?: "stripe" | "paypal" | "razorpay";
+  statementDescriptor?: string;
+  extraDescriptor?: string;
+  mockAlertsEnabled?: boolean;
 }
 
 export interface Merchant {
@@ -84,6 +89,9 @@ const DEFAULT_SETTINGS: MerchantSettings = {
   reviewAmountLimit: 500,
   requireApprovalHighValue: true,
   requireApprovalWeakEvidence: true,
+  paymentProcessor: "stripe",
+  statementDescriptor: "NORTHLINE",
+  mockAlertsEnabled: true,
 };
 
 // --- Data access ---

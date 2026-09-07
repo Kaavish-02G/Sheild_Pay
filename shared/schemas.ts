@@ -97,6 +97,7 @@ export interface GatewayAdapter {
     pkg: VerifiedEvidencePackage
   ): Promise<SubmissionResult>;
   checkStatus(disputeId: string): Promise<SubmissionResult>;
+  refund(orderId: string): Promise<SubmissionResult>;
 }
 
 // --- P3: AI Agent Loop ---
@@ -215,6 +216,10 @@ export const MerchantSettingsSchema = z.object({
   requireApprovalHighValue: z.boolean(),
   requireApprovalWeakEvidence: z.boolean(),
   requireApprovalMissingDeliveryProof: z.boolean().optional(),
+  paymentProcessor: GatewayTypeSchema.optional().default("stripe"),
+  statementDescriptor: z.string().optional().default("NORTHLINE"),
+  extraDescriptor: z.string().optional(),
+  mockAlertsEnabled: z.boolean().optional().default(true),
 });
 export type MerchantSettings = z.infer<typeof MerchantSettingsSchema>;
 
@@ -426,3 +431,42 @@ export interface PlatformAdapter {
   getFulfillment(orderId: string): Promise<FulfillmentDetails>;
   onWebhook(payload: unknown, signature: string): Promise<DisputeEvent | null>;
 }
+
+// --- Mock Alerts (simulated pre-dispute signal; not a card-network product) ---
+
+export const MOCK_ALERT_DISCLAIMER =
+  "Simulated signal — not connected to Ethoca/Verifi.";
+
+export const MockPreAlertEventSchema = z.object({
+  type: z.literal("mock.pre_dispute_alert"),
+  eventId: z.string().optional(),
+  orderId: z.string().min(1),
+  riskReason: z.string().min(1),
+  amount: z.number(),
+  currency: z.string(),
+  source: z.literal("mock-alerts-simulator"),
+});
+export type MockPreAlertEvent = z.infer<typeof MockPreAlertEventSchema>;
+
+export const MockAlertOutcomeSchema = z.enum([
+  "refunded",
+  "skipped",
+  "already_handled",
+]);
+export type MockAlertOutcome = z.infer<typeof MockAlertOutcomeSchema>;
+
+export const MockAlertRecordSchema = z.object({
+  eventId: z.string(),
+  idempotencyKey: z.string(),
+  orderId: z.string(),
+  riskReason: z.string(),
+  amount: z.number(),
+  currency: z.string(),
+  source: z.literal("mock_alert"),
+  outcome: MockAlertOutcomeSchema,
+  message: z.string(),
+  confidenceScore: z.number().optional(),
+  gatewayReference: z.string().optional(),
+  createdAt: z.string(),
+});
+export type MockAlertRecord = z.infer<typeof MockAlertRecordSchema>;

@@ -117,6 +117,28 @@ export async function fileShopDispute(input: {
   };
 }
 
+export async function simulateShopPreAlert(input: {
+  orderId: string;
+  riskReason?: string;
+}) {
+  const res = await commerceFetch("/admin/simulate-prealert", {
+    method: "POST",
+    body: JSON.stringify({
+      orderId: input.orderId,
+      riskReason: input.riskReason ?? "customer_contacted_bank",
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error ?? `Simulated pre-dispute signal failed (${res.status})`);
+  }
+  return data as {
+    success: boolean;
+    event: Record<string, unknown>;
+    alert: Record<string, unknown>;
+  };
+}
+
 export function productSwatch(image: string): { bg: string; ink: string } {
   const map: Record<string, { bg: string; ink: string }> = {
     sweater: { bg: "#fde68a", ink: "#451a03" },

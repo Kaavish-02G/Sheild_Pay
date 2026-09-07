@@ -105,6 +105,18 @@ function buildOrderRecord({
       status: "delivered",
       lastUpdate: deliveredAt,
       deliveredAt,
+      events: [
+        {
+          timestamp: shippedAt,
+          description: "Picked up by carrier",
+          location: "San Francisco, CA",
+        },
+        {
+          timestamp: deliveredAt,
+          description: "Delivered — signed by A. RIVERA",
+          location: shipping.city ?? "San Francisco, CA",
+        },
+      ],
     },
     refunds: { orderId, refunds: [], totalRefunded: 0 },
     payment: {
@@ -149,6 +161,98 @@ function seedLegacyOrder(orderId) {
 }
 
 ["1042", "1112", "555", "1088"].forEach(seedLegacyOrder);
+seedWeakOrder("NL-WEAK");
+
+function applyWeakFulfillment(order) {
+  order.fulfillment = {
+    orderId: order.orderId,
+    status: "unfulfilled",
+    trackingNumber: null,
+    carrier: null,
+    shippedAt: null,
+    deliveredAt: null,
+  };
+  order.tracking = {
+    orderId: order.orderId,
+    carrier: null,
+    trackingNumber: null,
+    status: "pending",
+    lastUpdate: null,
+    deliveredAt: null,
+    events: [],
+  };
+}
+
+function seedWeakOrder(orderId) {
+  seedLegacyOrder(orderId);
+  applyWeakFulfillment(orders.get(orderId));
+}
+
+function parseJsonSafe(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+}
+
+async function emitPreAlertForOrder(order, riskReason = "customer_contacted_bank", eventId) {
+  const event = {
+    type: "mock.pre_dispute_alert",
+    eventId: eventId ?? `mock-alert-${randomUUID()}`,
+    orderId: order.orderId,
+    riskReason,
+    amount: Math.round(Number(order.totalAmount) * 100),
+    currency: String(order.currency ?? "usd").toLowerCase(),
+    source: "mock-alerts-simulator",
+  };
+  const forward = await forwardMockPreAlert(event);
+  const parsed = parseJsonSafe(forward.body);
+  return { event, alert: parsed.alert ?? parsed, status: forward.status };
+}
+
+async function emitDisputeForOrder(order, reason = "product_not_received", merchantId = "demo-merchant") {
+  const amount = Math.round(Number(order.totalAmount) * 100);
+  const disputeId = `dp_mock_${randomUUID().slice(0, 12)}`;
+  const stripePayload = {
+    type: "charge.dispute.created",
+    data: {
+      object: {
+        id: disputeId,
+        amount,
+        currency: String(order.currency ?? "usd").toLowerCase(),
+        reason,
+        metadata: {
+          order_id: order.orderId,
+          merchant_id: merchantId,
+        },
+        payment_method_details: {
+          card: { network: order.payment?.cardNetwork ?? "visa" },
+        },
+      },
+    },
+  };
+  const forward = await forwardStripeWebhook(stripePayload);
+  const parsed = parseJsonSafe(forward.body);
+  return {
+    disputeId: parsed.disputeId ?? `sim-${disputeId.replace(/^dp_/, "")}`,
+    gatewayDisputeId: disputeId,
+    status: forward.status,
+    body: forward.body,
+  };
+}
+
+async function forwardMockPreAlert(payload) {
+  const res = await fetch(`${SHIELDPAY_URL}/api/core/mock-alerts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-mock-alerts": "true",
+    },
+    body: JSON.stringify(payload),
+  });
+  return { status: res.status, body: await res.text() };
+}
 
 async function forwardStripeWebhook(payload) {
   const res = await fetch(`${SHIELDPAY_URL}/api/core/webhooks/stripe`, {
@@ -305,14 +409,79 @@ const server = http.createServer(async (req, res) => {
         },
       });
       orders.set(orderId, order);
-      return json(res, 201, { success: true, order });
+      const alertResult = await emitPreAlertForOrder(order);
+      const disputeResult = await emitDisputeForOrder(
+        order,
+        "product_not_received",
+        body.merchantId ?? "demo-merchant"
+      );
+      order.shieldpay = {
+        alert: alertResult.alert,
+        disputeId: disputeResult.disputeId,
+      };
+      orders.set(orderId, order);
+      return json(res, 201, {
+        success: true,
+        order,
+        alert: alertResult.alert,
+        disputeId: disputeResult.disputeId,
+      });
     }
 
     if (req.method === "POST" && url.pathname === "/admin/orders") {
       const body = JSON.parse((await readBody(req)) || "{}");
       const orderId = body.orderId ?? nextOrderId();
-      if (!orders.has(orderId)) seedLegacyOrder(orderId);
+      if (!orders.has(orderId)) {
+        if (body.weakEvidence === true) seedWeakOrder(orderId);
+        else seedLegacyOrder(orderId);
+      }
       return json(res, 201, { orderId, order: orders.get(orderId) });
+    }
+
+    if (req.method === "POST" && url.pathname === "/admin/record-refund") {
+      const body = JSON.parse((await readBody(req)) || "{}");
+      const orderId = body.orderId;
+      const order = orders.get(orderId);
+      if (!order) return json(res, 404, { error: "Order not found" });
+      const amount = Number(body.amount ?? order.totalAmount);
+      const refundId = `re_mock_${randomUUID().slice(0, 10)}`;
+      order.refunds = order.refunds ?? { orderId, refunds: [], totalRefunded: 0 };
+      order.refunds.refunds.push({
+        refundId,
+        amount,
+        currency: String(body.currency ?? order.currency ?? "usd"),
+        status: "completed",
+        reason: "simulated_pre_dispute_auto_refund",
+        createdAt: new Date().toISOString(),
+      });
+      order.refunds.totalRefunded = Number(
+        (order.refunds.totalRefunded + amount).toFixed(2)
+      );
+      if (order.payment) order.payment.status = "refunded";
+      orders.set(orderId, order);
+      return json(res, 200, { success: true, refundId, refunds: order.refunds });
+    }
+
+    if (req.method === "POST" && url.pathname === "/admin/simulate-prealert") {
+      const body = JSON.parse((await readBody(req)) || "{}");
+      const orderId = body.orderId;
+      if (!orderId) return json(res, 400, { error: "orderId is required" });
+      if (!orders.has(orderId)) {
+        if (body.weakEvidence === true) seedWeakOrder(orderId);
+        else seedLegacyOrder(orderId);
+      }
+      const order = orders.get(orderId);
+      const result = await emitPreAlertForOrder(
+        order,
+        body.riskReason ?? "customer_contacted_bank",
+        body.eventId
+      );
+      return json(res, 200, {
+        success: result.status < 400,
+        event: result.event,
+        alert: result.alert,
+        shieldpayStatus: result.status,
+      });
     }
 
     if (req.method === "POST" && (url.pathname === "/disputes" || url.pathname === "/admin/simulate-dispute")) {
@@ -320,41 +489,18 @@ const server = http.createServer(async (req, res) => {
       const orderId = body.orderId ?? "1042";
       if (!orders.has(orderId)) seedLegacyOrder(orderId);
       const order = orders.get(orderId);
-      const amount = Math.round(Number(order.totalAmount) * 100);
-      const disputeId = `dp_mock_${randomUUID().slice(0, 12)}`;
-      const stripePayload = {
-        type: "charge.dispute.created",
-        data: {
-          object: {
-            id: disputeId,
-            amount,
-            currency: String(order.currency ?? "usd").toLowerCase(),
-            reason: body.reason ?? "product_not_received",
-            metadata: {
-              order_id: orderId,
-              merchant_id: body.merchantId ?? "demo-merchant",
-            },
-            payment_method_details: {
-              card: { network: order.payment?.cardNetwork ?? body.cardNetwork ?? "visa" },
-            },
-          },
-        },
-      };
-      const forward = await forwardStripeWebhook(stripePayload);
-      let shieldpayDisputeId = null;
-      try {
-        const parsed = JSON.parse(forward.body);
-        shieldpayDisputeId = parsed.disputeId ?? null;
-      } catch {
-        shieldpayDisputeId = null;
-      }
+      const result = await emitDisputeForOrder(
+        order,
+        body.reason ?? "product_not_received",
+        body.merchantId ?? "demo-merchant"
+      );
       return json(res, 200, {
-        success: forward.status < 400,
-        disputeId: shieldpayDisputeId ?? `sim-${disputeId.replace(/^dp_/, "")}`,
-        gatewayDisputeId: disputeId,
+        success: result.status < 400,
+        disputeId: result.disputeId,
+        gatewayDisputeId: result.gatewayDisputeId,
         orderId,
-        shieldpayStatus: forward.status,
-        shieldpayBody: forward.body,
+        shieldpayStatus: result.status,
+        shieldpayBody: result.body,
       });
     }
 

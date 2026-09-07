@@ -68,4 +68,19 @@ export const stripeGateway: GatewayAdapter = {
       return { success: false, error: normalizeGatewayError(error) };
     }
   },
+
+  async refund(orderId: string): Promise<SubmissionResult> {
+    const stripe = getStripeClient();
+    if (!stripe) {
+      return { success: false, error: "STRIPE_SECRET_KEY is not configured" };
+    }
+    try {
+      const refund = await withRetry("stripe.refunds.create", () =>
+        stripe.refunds.create({ metadata: { order_id: orderId } })
+      );
+      return { success: true, gatewayReference: refund.id };
+    } catch (error) {
+      return { success: false, error: normalizeGatewayError(error) };
+    }
+  },
 };

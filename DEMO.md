@@ -29,12 +29,12 @@ npm run dev
 npm run mock-commerce
 ```
 
-## 2. Shop, then dispute (primary demo)
+## 2. Shop, then merchant desk (primary demo)
 
-1. Open **http://localhost:3000/shop** (or 3001).
+1. Open **http://localhost:3000/shop**.
 2. Add an item to cart and check out (pick Visa / Mastercard / Amex / RuPay).
-3. On the order page, choose a dispute reason and click **Draft and submit dispute**.
-4. Follow the link to the ShieldPay merchant dashboard.
+3. Checkout automatically sends a simulated pre-dispute signal **and** a dispute case to ShieldPay.
+4. Open the merchant dashboard — Mock Alerts and Disputes are already populated.
 
 ## 3. Optional: admin simulate (no storefront)
 
@@ -95,4 +95,26 @@ For backward compatibility without mock commerce:
 curl -X POST http://localhost:3000/api/core/simulate-dispute \
   -H "Content-Type: application/json" \
   -d "{\"orderId\":\"1042\",\"reason\":\"product not received\"}"
+```
+
+## 6. Simulated Pre-Dispute Alerts (Mock Alerts)
+
+Checkout on Northline automatically:
+
+1. Emits a synthetic `mock.pre_dispute_alert` (not a card-network webhook)
+2. Forwards a Stripe-shaped dispute so it appears on the merchant Disputes list
+
+No storefront simulate buttons. UI disclaimer: **Simulated signal — not connected to Ethoca/Verifi.**
+
+Default delivered+signed orders skip auto-refund (contest). Weak-evidence orders (`NL-WEAK`) auto-refund.
+
+Merchant dashboard: **Simulated Pre-Dispute Alerts** shows metric cards, a prevention sparkline, processor/descriptor setup, and recent Mock Alerts.
+
+Admin-only (optional):
+
+```bash
+curl -X POST http://localhost:4010/admin/simulate-prealert \
+  -H "Authorization: Bearer mock-commerce-key" \
+  -H "Content-Type: application/json" \
+  -d "{\"orderId\":\"NL-WEAK\",\"riskReason\":\"customer_contacted_bank\"}"
 ```

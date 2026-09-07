@@ -54,10 +54,26 @@ export async function ingestDisputeEvent(event: DisputeEvent): Promise<DisputeEv
 
   if (event.platform === "mock_commerce") {
     const merchant = await upsertMockMerchant(event.merchantId);
-    resolved = { ...event, merchantId: merchant._id.toString() };
+    const processor = merchant.settings?.paymentProcessor;
+    resolved = {
+      ...event,
+      merchantId: merchant._id.toString(),
+      gateway:
+        processor === "stripe" || processor === "paypal" || processor === "razorpay"
+          ? processor
+          : event.gateway,
+    };
   } else if (event.platform === "shopify") {
     const merchant = await upsertMerchant(event.merchantId, "webhook-token");
-    resolved = { ...event, merchantId: merchant._id.toString() };
+    const processor = merchant.settings?.paymentProcessor;
+    resolved = {
+      ...event,
+      merchantId: merchant._id.toString(),
+      gateway:
+        processor === "stripe" || processor === "paypal" || processor === "razorpay"
+          ? processor
+          : event.gateway,
+    };
   }
 
   await handleDisputeEvent(resolved);
