@@ -17,7 +17,8 @@ export default function MockEvidenceScreenshots({
   evidence,
   gatewayReference,
 }: MockEvidenceScreenshotsProps) {
-  const orderTotal = fieldValue(evidence, "order_total") ?? `${dispute.currency} ${dispute.amount.toFixed(2)}`;
+  const orderTotal =
+    fieldValue(evidence, "order_total") ?? `${dispute.currency} ${dispute.amount.toFixed(2)}`;
   const paymentStatus = fieldValue(evidence, "payment_status") ?? "captured";
   const tracking = fieldValue(evidence, "tracking_number") ?? "—";
   const delivery = fieldValue(evidence, "delivery_status") ?? "delivered";
@@ -26,16 +27,16 @@ export default function MockEvidenceScreenshots({
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <div className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-md dark:border-slate-600 dark:bg-slate-950">
-        <div className="border-b border-slate-200 bg-slate-900 px-4 py-2 dark:border-slate-700">
-          <p className="text-xs font-semibold uppercase tracking-wider text-white">
-            Mock Payment Receipt
+      <div className="dash-card overflow-hidden">
+        <div className="border-b border-[var(--dash-line)] bg-[var(--dash-sidebar)] px-4 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#f4efe8]">
+            Mock payment receipt
           </p>
         </div>
-        <div className="space-y-2 p-4 font-mono text-xs text-slate-700 dark:text-slate-300">
-          <div className="flex justify-between border-b border-dashed border-slate-200 pb-2 dark:border-slate-700">
-            <span>STRIPE PAYMENTS</span>
-            <span className="text-emerald-600">PAID</span>
+        <div className="space-y-2 p-4 font-mono text-xs">
+          <div className="flex justify-between border-b border-dashed border-[var(--dash-line)] pb-2">
+            <span>PROCESSOR</span>
+            <span className="text-[var(--dash-ok)]">PAID</span>
           </div>
           <p>Order #{orderId}</p>
           <p>Amount: {orderTotal}</p>
@@ -43,46 +44,41 @@ export default function MockEvidenceScreenshots({
           <p>AVS: match · CVV: match</p>
           <p>Date: {paidAt}</p>
           {gatewayReference && (
-            <p className="mt-2 rounded bg-emerald-50 px-2 py-1 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+            <p className="mt-2 rounded border border-[var(--dash-line)] px-2 py-1">
               PG Ref: {gatewayReference}
             </p>
           )}
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-md dark:border-slate-600 dark:bg-slate-950">
-        <div className="border-b border-slate-200 bg-blue-900 px-4 py-2 dark:border-slate-700">
-          <p className="text-xs font-semibold uppercase tracking-wider text-white">
-            Mock Delivery Proof
+      <div className="dash-card overflow-hidden">
+        <div className="border-b border-[var(--dash-line)] bg-[var(--dash-accent)] px-4 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--dash-paper)]">
+            Mock delivery proof
           </p>
         </div>
-        <div className="space-y-2 p-4 text-xs text-slate-700 dark:text-slate-300">
-          <div className="rounded-md bg-slate-100 p-3 dark:bg-slate-800">
-            <p className="font-semibold text-slate-900 dark:text-slate-100">Carrier Tracking</p>
+        <div className="space-y-2 p-4 text-xs">
+          <div className="rounded-md bg-[var(--dash-paper)] p-3">
+            <p className="font-semibold">Carrier tracking</p>
             <p className="mt-1 font-mono">{tracking}</p>
-            <p className="mt-2 capitalize text-emerald-700 dark:text-emerald-400">{delivery}</p>
+            <p className="mt-2 capitalize text-[var(--dash-ok)]">{delivery}</p>
           </div>
-          <div className="rounded-md border border-dashed border-slate-300 p-3 dark:border-slate-600">
-            <p className="text-slate-500">Screenshot: package delivered to billing address</p>
-            <div className="mt-2 h-16 rounded bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800" />
+          <div className="rounded-md border border-dashed border-[var(--dash-line-strong)] p-3">
+            <p className="dash-muted">Placeholder: package delivered to billing address</p>
+            <div className="mt-2 h-16 rounded bg-[linear-gradient(135deg,var(--dash-line),var(--dash-paper))]" />
           </div>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-md sm:col-span-2 dark:border-slate-600 dark:bg-slate-950">
-        <div className="border-b border-slate-200 bg-violet-900 px-4 py-2 dark:border-slate-700">
-          <p className="text-xs font-semibold uppercase tracking-wider text-white">
-            Evidence Pack Sent to Payment Gateway
-          </p>
+      <div className="dash-card overflow-hidden sm:col-span-2">
+        <div className="border-b border-[var(--dash-line)] px-4 py-2">
+          <p className="dash-kicker">Evidence pack sent to payment gateway</p>
         </div>
         <div className="grid gap-3 p-4 sm:grid-cols-3">
           {evidence.evidence.map((field) => (
-            <div
-              key={field.key}
-              className="rounded border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800"
-            >
-              <p className="text-[10px] uppercase text-slate-400">{field.label}</p>
-              <p className="text-xs font-medium text-slate-800 dark:text-slate-200">{field.value}</p>
+            <div key={field.key} className="rounded border border-[var(--dash-line)] px-3 py-2">
+              <p className="dash-muted text-[10px] uppercase">{field.label}</p>
+              <p className="text-xs font-medium">{field.value}</p>
             </div>
           ))}
         </div>

@@ -28,19 +28,14 @@ export default function ReviewNotificationBanner() {
       {notifications.map((n) => (
         <div
           key={n.disputeId}
-          className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20"
+          className="dash-banner dash-banner-warn flex flex-wrap items-center justify-between gap-4"
         >
           <div>
-            <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-              Review required: {n.orderId}
-            </p>
-            <p className="mt-0.5 text-sm text-amber-800 dark:text-amber-300">{n.message}</p>
+            <p className="text-sm font-semibold">Review required: {n.orderId}</p>
+            <p className="dash-muted mt-0.5 text-sm">{n.message}</p>
           </div>
-          <Link
-            href={`/dashboard/disputes/${n.disputeId}`}
-            className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
-          >
-            Review Now
+          <Link href={`/dashboard/disputes/${n.disputeId}`} className="dash-btn-primary">
+            Review now
           </Link>
         </div>
       ))}

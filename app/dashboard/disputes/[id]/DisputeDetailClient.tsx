@@ -197,21 +197,14 @@ export default function DisputeDetailPage() {
   }, [evidence, id]);
 
   if (loading) {
-    return (
-      <div className="text-center text-slate-400 dark:text-slate-500">
-        Opening live agent view…
-      </div>
-    );
+    return <div className="dash-muted text-sm">Opening case…</div>;
   }
 
   if (error || !dispute || !evidence || !settings) {
     return (
-      <div className="text-center">
-        <p className="text-red-600">{error ?? "Failed to load dispute"}</p>
-        <Link
-          href="/dashboard"
-          className="mt-4 inline-block text-sm text-blue-600 hover:underline dark:text-blue-400"
-        >
+      <div>
+        <p className="text-[var(--dash-bad)]">{error ?? "Failed to load dispute"}</p>
+        <Link href="/dashboard" className="mt-4 inline-block text-sm text-[var(--dash-gold)]">
           ← Back to dashboard
         </Link>
       </div>
@@ -220,19 +213,15 @@ export default function DisputeDetailPage() {
 
   return (
     <div>
-      <Link
-        href="/dashboard"
-        className="text-sm text-blue-600 hover:underline dark:text-blue-400"
-      >
-        ← Back to disputes
+      <Link href="/dashboard" className="text-sm text-[var(--dash-gold)]">
+        ← Cases
       </Link>
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Dispute: {dispute.orderId}
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="dash-kicker">Case file</p>
+          <h1 className="dash-title mt-1">{dispute.orderId}</h1>
+          <p className="dash-muted mt-1 text-sm">
             {(evidence.canonicalReason ?? dispute.canonicalReason ?? dispute.reason).replace(
               /_/g,
               " "
@@ -248,18 +237,16 @@ export default function DisputeDetailPage() {
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition ${
+            className={
               dispute.status === "insufficient" ||
               evidence.confidenceScore < settings.minEvidenceScore
-                ? "bg-red-600 text-white hover:bg-red-700"
-                : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-            }`}
+                ? "dash-btn-danger"
+                : "dash-btn-ghost"
+            }
           >
             Preview
           </button>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-            {STATUS_LABELS[dispute.status]}
-          </span>
+          <span className="dash-chip">{STATUS_LABELS[dispute.status]}</span>
           {evidence.confidenceScore > 0 && (
             <EvidenceScoreBadge score={evidence.confidenceScore} size="lg" />
           )}
@@ -267,7 +254,7 @@ export default function DisputeDetailPage() {
       </div>
 
       {evidence.confidenceScore > 0 && (
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+        <p className="dash-muted mt-3 text-sm leading-6">
           Confidence score {evidence.confidenceScore}/100 — auto-submit threshold is{" "}
           {settings.autoSubmitThreshold}, minimum evidence is {settings.minEvidenceScore}.
           {evidence.confidenceScore < settings.minEvidenceScore
@@ -292,28 +279,26 @@ export default function DisputeDetailPage() {
       )}
 
       {canShowPreview && (
-        <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-800/40">
+        <section className="dash-card mt-8 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                Case Preview
-              </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Full dispute preview with mock payment receipt and delivery proof — always available
-                for merchant review.
+              <h2 className="dash-serif text-2xl">Case preview</h2>
+              <p className="dash-muted mt-1 text-sm leading-6">
+                Receipt and delivery placeholders from verified evidence fields — always available
+                for review.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setPreviewOpen(true)}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition ${
+              className={
                 evidence.confidenceScore < settings.minEvidenceScore ||
                 dispute.status === "insufficient"
-                  ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-violet-600 text-white hover:bg-violet-700"
-              }`}
+                  ? "dash-btn-danger"
+                  : "dash-btn-primary"
+              }
             >
-              Open Full Preview
+              Open full preview
             </button>
           </div>
           <div className="mt-5">
@@ -350,10 +335,8 @@ export default function DisputeDetailPage() {
 
       {(pgSent || dispute.status === "submitted") && !canShowPreview && (
         <section className="mt-8">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            Mock Payment Receipt & Delivery Proof
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <h2 className="dash-serif text-2xl">Receipt & delivery proof</h2>
+          <p className="dash-muted mt-1 text-sm">
             Evidence screenshots packaged and sent to the payment gateway.
           </p>
           <div className="mt-4">
@@ -368,34 +351,23 @@ export default function DisputeDetailPage() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <section>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            Verified Evidence
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Evidence gathered by the AI investigation agent.
-          </p>
+          <h2 className="dash-serif text-2xl">Verified evidence</h2>
+          <p className="dash-muted mt-1 text-sm">Gathered against the network rule pack.</p>
           {evidence.evidence.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-400 dark:text-slate-500">
-              Waiting for agent step 1…
-            </p>
+            <p className="dash-muted mt-4 text-sm">Waiting for investigation…</p>
           ) : (
             <dl className="mt-4 space-y-3">
               {evidence.evidence.map((field) => (
-                <div
-                  key={field.key}
-                  className="rounded-lg border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800"
-                >
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                <div key={field.key} className="dash-card px-4 py-3">
+                  <dt className="dash-kicker">
                     {field.label}
                     {field.source && (
-                      <span className="ml-2 font-normal normal-case text-slate-300 dark:text-slate-600">
+                      <span className="ml-2 font-normal normal-case tracking-normal">
                         via {field.source}
                       </span>
                     )}
                   </dt>
-                  <dd className="mt-1 text-sm text-slate-800 dark:text-slate-200">
-                    {field.value}
-                  </dd>
+                  <dd className="mt-1 text-sm">{field.value}</dd>
                 </div>
               ))}
             </dl>
@@ -403,11 +375,9 @@ export default function DisputeDetailPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            AI Audit Trail
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Live step-by-step reasoning — updates every second while the agent runs.
+          <h2 className="dash-serif text-2xl">Audit trail</h2>
+          <p className="dash-muted mt-1 text-sm">
+            Live ledger — updates while investigation runs.
           </p>
           <div className="mt-4">
             <AuditTrailTimeline entries={evidence.ledger} />
@@ -416,22 +386,18 @@ export default function DisputeDetailPage() {
       </div>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-          Generated Response
-        </h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          AI-written dispute response based solely on verified evidence.
+        <h2 className="dash-serif text-2xl">Rebuttal</h2>
+        <p className="dash-muted mt-1 text-sm">
+          Drafted from verified evidence only — never invented facts.
         </p>
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+        <div className="dash-card mt-4 p-6">
           {responseText ? (
-            <p className="text-sm leading-relaxed text-slate-800 dark:text-slate-200">
-              {responseText}
-            </p>
+            <p className="text-sm leading-7">{responseText}</p>
           ) : (
-            <p className="text-sm text-slate-400 dark:text-slate-500">
+            <p className="dash-muted text-sm">
               {isAgentRunning
-                ? "Response will appear after the 3-step investigation completes…"
-                : "Response will appear once the AI agent completes automation."}
+                ? "Response appears after investigation completes…"
+                : "Response appears once automation finishes."}
             </p>
           )}
         </div>

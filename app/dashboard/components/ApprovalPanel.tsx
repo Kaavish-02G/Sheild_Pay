@@ -26,15 +26,11 @@ export default function ApprovalPanel({
 
   if (dispute.status === "insufficient") {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6 dark:border-red-800 dark:bg-red-900/20">
-        <h3 className="text-lg font-semibold text-red-900 dark:text-red-300">
-          Insufficient Evidence — Manual Handling Required
-        </h3>
-        <p className="mt-2 text-sm text-red-700 dark:text-red-400">
-          The AI agent could not gather enough evidence to build a strong dispute response.
-          Evidence confidence ({evidence.confidenceScore}%) is below the minimum threshold
-          ({settings.minEvidenceScore}%). Please review this case manually or gather
-          additional documentation before submitting.
+      <div className="dash-banner dash-banner-warn">
+        <h3 className="dash-serif text-2xl">Insufficient evidence</h3>
+        <p className="mt-2 text-sm leading-6">
+          Confidence ({evidence.confidenceScore}%) is below the minimum (
+          {settings.minEvidenceScore}%). Review the case or send to the gateway manually.
         </p>
       </div>
     );
@@ -42,10 +38,10 @@ export default function ApprovalPanel({
 
   if (submitted) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-800">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Dispute Submitted</h3>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          This dispute response has been submitted to the payment gateway for review.
+      <div className="dash-banner dash-banner-ok">
+        <h3 className="dash-serif text-2xl">Submitted</h3>
+        <p className="mt-2 text-sm leading-6">
+          This response has been sent to the payment gateway.
         </p>
       </div>
     );
@@ -74,39 +70,29 @@ export default function ApprovalPanel({
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+    <div className="dash-card p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Approval & Submission</h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <h3 className="dash-serif text-2xl">Approval</h3>
+          <p className="mt-1 text-sm">
             Evidence confidence: <EvidenceScoreBadge score={evidence.confidenceScore} size="sm" />
-            {needsApproval && (
-              <span className="ml-2 text-amber-600 dark:text-amber-400">
-                · Requires merchant approval
-              </span>
-            )}
+            {needsApproval && <span className="ml-2 text-[var(--dash-warn)]">· Needs approval</span>}
           </p>
         </div>
         <button
           type="button"
           onClick={handleApprove}
           disabled={submitting || !responseText}
-          className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="dash-btn-primary disabled:cursor-not-allowed"
         >
-          {submitting ? "Submitting…" : "Approve & Submit"}
+          {submitting ? "Submitting…" : "Approve & submit"}
         </button>
       </div>
 
-      {toast && (
-        <div className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-          {toast}
-        </div>
-      )}
+      {toast && <div className="dash-banner dash-banner-warn mt-4 text-sm">{toast}</div>}
 
       {!responseText && (
-        <p className="mt-3 text-sm text-slate-400 dark:text-slate-500">
-          Waiting for AI response generation before submission is available.
-        </p>
+        <p className="dash-muted mt-3 text-sm">Waiting for the rebuttal before submit is available.</p>
       )}
     </div>
   );

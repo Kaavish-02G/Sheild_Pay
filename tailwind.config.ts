@@ -28,7 +28,12 @@ const config: Config = {
     "lg:col-span-3",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        dash: ["var(--font-dash-sans)", "Segoe UI", "sans-serif"],
+        display: ["var(--font-dash-serif)", "Georgia", "serif"],
+      },
+    },
   },
   plugins: [],
 };
