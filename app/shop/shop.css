@@ -37,35 +37,93 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 500;
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
   box-sizing: border-box;
+  text-decoration: none;
+  line-height: 1.2;
 }
 
 .shop-btn-primary {
   background: #1c1917;
-  color: #fff;
+  color: #ffffff !important;
+  border-color: #1c1917;
+}
+
+.shop-shell a.shop-btn-primary,
+.shop-shell button.shop-btn-primary {
+  color: #ffffff !important;
 }
 
 .shop-btn-primary:hover {
   background: #292524;
+  border-color: #292524;
 }
 
 .shop-btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .shop-btn-secondary {
-  background: #fff;
-  color: #1c1917;
-  border-color: #d6d3d1;
+  background: #ffffff;
+  color: #1c1917 !important;
+  border-color: #a8a29e;
+}
+
+.shop-shell a.shop-btn-secondary,
+.shop-shell button.shop-btn-secondary {
+  color: #1c1917 !important;
 }
 
 .shop-btn-secondary:hover {
   background: #fafaf9;
+  border-color: #78716c;
+}
+
+.shop-success-banner {
+  margin-top: 2.5rem;
+  border-radius: 12px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  padding: 1.25rem 1.5rem;
+}
+
+.shop-success-banner h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: #14532d;
+}
+
+.shop-success-banner p {
+  margin: 0.5rem 0 0;
+  color: #166534;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.shop-alert-banner {
+  margin-top: 2.5rem;
+  border-radius: 12px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  padding: 1.25rem 1.5rem;
+}
+
+.shop-alert-banner h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: #9a3412;
+}
+
+.shop-alert-banner p {
+  margin: 0.5rem 0 0;
+  color: #7c2d12;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .shop-btn-full {

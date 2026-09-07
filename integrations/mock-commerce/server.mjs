@@ -13,7 +13,33 @@ const SHIELDPAY_URL = process.env.SHIELDPAY_APP_URL ?? "http://localhost:3000";
 const API_KEY = process.env.MOCK_COMMERCE_API_KEY ?? "mock-commerce-key";
 
 const catalogPath = join(dirname(fileURLToPath(import.meta.url)), "../../shared/shop/catalog.json");
+const testCardsPath = join(dirname(fileURLToPath(import.meta.url)), "../../shared/shop/test-cards.json");
 const catalog = JSON.parse(readFileSync(catalogPath, "utf8"));
+const testCardScenarios = JSON.parse(readFileSync(testCardsPath, "utf8")).scenarios ?? [];
+
+function cardDigits(value) {
+  return String(value ?? "").replace(/\D/g, "");
+}
+
+function lookupTestCardScenario(cardNumber) {
+  const digits = cardDigits(cardNumber);
+  if (digits.length < 12) return null;
+  const last4 = digits.slice(-4);
+  return (
+    testCardScenarios.find((scenario) => scenario.pans.includes(digits)) ??
+    testCardScenarios.find((scenario) => scenario.last4 === last4) ??
+    null
+  );
+}
+
+function inferCardNetwork(cardNumber, fallback = "visa") {
+  const digits = cardDigits(cardNumber);
+  if (digits.startsWith("4")) return "visa";
+  if (/^5[1-5]/.test(digits) || /^2[2-7]/.test(digits)) return "mastercard";
+  if (/^3[47]/.test(digits)) return "amex";
+  if (/^(60|65|81|82)/.test(digits)) return "rupay";
+  return fallback;
+}
 
 const products = new Map(catalog.products.map((p) => [p.id, p]));
 const productsByHandle = new Map(catalog.products.map((p) => [p.handle, p]));
@@ -130,7 +156,7 @@ function buildOrderRecord({
       cvvResult: "match",
       gateway: "stripe",
       cardNetwork: payment.cardNetwork ?? "visa",
-      last4: payment.last4 ?? "4242",
+      last4: payment.last4 ?? "0000",
       capturedAt: createdAt,
     },
   };
@@ -360,6 +386,28 @@ const server = http.createServer(async (req, res) => {
         return json(res, 400, { error: "Cart is empty" });
       }
 
+      const pan = cardDigits(body.cardNumber);
+      if (pan.length < 12 || pan.length > 19) {
+        return json(res, 400, { error: "Enter a card number (12–19 digits)." });
+      }
+      const expMonth = Number(body.expMonth);
+      const expYearRaw = Number(body.expYear);
+      const expYear = expYearRaw < 100 ? 2000 + expYearRaw : expYearRaw;
+      if (!Number.isInteger(expMonth) || expMonth < 1 || expMonth > 12) {
+        return json(res, 400, { error: "Enter a valid expiry month." });
+      }
+      const now = new Date();
+      if (
+        !Number.isInteger(expYear) ||
+        new Date(expYear, expMonth - 1, 1) < new Date(now.getFullYear(), now.getMonth(), 1)
+      ) {
+        return json(res, 400, { error: "Card is expired." });
+      }
+      const cvc = cardDigits(body.cvc);
+      if (cvc.length < 3 || cvc.length > 4) {
+        return json(res, 400, { error: "Enter a 3- or 4-digit CVC." });
+      }
+
       const items = lineItems.map((line) => {
         const product = products.get(line.productId);
         if (!product) {
@@ -404,27 +452,43 @@ const server = http.createServer(async (req, res) => {
           postalCode: "94103",
         },
         payment: {
-          cardNetwork: body.cardNetwork ?? "visa",
-          last4: String(body.cardNumber ?? "4242").slice(-4),
+          cardNetwork: inferCardNetwork(body.cardNumber, body.cardNetwork ?? "visa"),
+          last4: cardDigits(body.cardNumber).slice(-4) || "0000",
         },
       });
+      const scenario = lookupTestCardScenario(body.cardNumber);
+      if (scenario?.weakEvidence) {
+        applyWeakFulfillment(order);
+      }
       orders.set(orderId, order);
-      const alertResult = await emitPreAlertForOrder(order);
-      const disputeResult = await emitDisputeForOrder(
-        order,
-        "product_not_received",
-        body.merchantId ?? "demo-merchant"
-      );
-      order.shieldpay = {
-        alert: alertResult.alert,
-        disputeId: disputeResult.disputeId,
-      };
+
+      let alertResult = null;
+      let disputeResult = null;
+      if (scenario) {
+        alertResult = await emitPreAlertForOrder(order);
+        disputeResult = await emitDisputeForOrder(
+          order,
+          scenario.reason,
+          body.merchantId ?? "demo-merchant"
+        );
+        order.shieldpay = {
+          alert: alertResult.alert,
+          disputeId: disputeResult.disputeId,
+          scenario: {
+            last4: scenario.last4,
+            reason: scenario.reason,
+            label: scenario.label,
+          },
+        };
+      } else {
+        order.shieldpay = { disputeId: null, alert: null, scenario: null };
+      }
       orders.set(orderId, order);
       return json(res, 201, {
         success: true,
         order,
-        alert: alertResult.alert,
-        disputeId: disputeResult.disputeId,
+        alert: alertResult?.alert ?? null,
+        disputeId: disputeResult?.disputeId ?? null,
       });
     }
 
