@@ -1,0 +1,94 @@
+{
+  "disputeId": "sim-demo-001",
+  "disputeReason": "fraudulent",
+  "confidenceScore": 78,
+  "generatedAt": "2026-09-06T11:00:00.000Z",
+  "evidence": [
+    {
+      "key": "order_id",
+      "label": "Order ID",
+      "value": "#1042",
+      "source": "order_lookup"
+    },
+    {
+      "key": "order_total",
+      "label": "Order Total",
+      "value": "$149.99 USD",
+      "source": "order_lookup"
+    },
+    {
+      "key": "order_date",
+      "label": "Order Date",
+      "value": "2026-08-28T14:22:00.000Z",
+      "source": "order_lookup"
+    },
+    {
+      "key": "customer_email",
+      "label": "Customer Email",
+      "value": "customer@example.com",
+      "source": "customer_lookup"
+    },
+    {
+      "key": "customer_orders",
+      "label": "Prior Orders",
+      "value": "3 completed orders on file",
+      "source": "customer_lookup"
+    },
+    {
+      "key": "tracking_number",
+      "label": "Tracking Number",
+      "value": "1Z999AA10123456784",
+      "source": "tracking_lookup"
+    },
+    {
+      "key": "carrier",
+      "label": "Carrier",
+      "value": "UPS",
+      "source": "tracking_lookup"
+    },
+    {
+      "key": "delivery_status",
+      "label": "Delivery Status",
+      "value": "Delivered on 2026-09-01 at 2:14 PM",
+      "source": "tracking_lookup"
+    },
+    {
+      "key": "payment_status",
+      "label": "Payment Status",
+      "value": "Captured — AVS match, CVV verified",
+      "source": "payment_lookup"
+    }
+  ],
+  "ledger": [
+    {
+      "tool": "order_lookup",
+      "reasoning": "Retrieve order details to verify transaction amount and date match the dispute claim.",
+      "resultSummary": "Order #1042 found — $149.99 USD placed 2026-08-28, 2 items.",
+      "timestamp": "2026-09-06T10:31:12.000Z"
+    },
+    {
+      "tool": "customer_lookup",
+      "reasoning": "Check customer account history for patterns indicating legitimate purchase behavior.",
+      "resultSummary": "Customer has 3 prior completed orders, account created 2025-11-15.",
+      "timestamp": "2026-09-06T10:31:45.000Z"
+    },
+    {
+      "tool": "tracking_lookup",
+      "reasoning": "Confirm shipment and delivery to counter product-not-received or fraud claims.",
+      "resultSummary": "UPS tracking 1Z999AA10123456784 — delivered 2026-09-01 to billing address.",
+      "timestamp": "2026-09-06T10:32:18.000Z"
+    },
+    {
+      "tool": "payment_lookup",
+      "reasoning": "Verify payment authorization details and fraud screening results.",
+      "resultSummary": "Payment captured with AVS match and CVV verification passed.",
+      "timestamp": "2026-09-06T10:32:52.000Z"
+    },
+    {
+      "tool": "evidence_scoring",
+      "reasoning": "Aggregate evidence strength — delivery proof present but dispute reason is fraud.",
+      "resultSummary": "Confidence score: 78/100 — good evidence, recommend merchant review.",
+      "timestamp": "2026-09-06T10:33:05.000Z"
+    }
+  ]
+}

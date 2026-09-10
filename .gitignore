@@ -1,20 +1,13 @@
-# dependencies
 node_modules/
-
-# env
-.env
-.env.local
-
-# next.js
 .next/
-out/
-
-# debug
-npm-debug.log*
-
-# typescript
+.env
+.env.*
+!.env.example
+artifacts/
+test-results/
+playwright-report/
+public/downloads/
+*.tsbuildinfo
+*.log
 next-env.d.ts
-
-# os
 .DS_Store
-Thumbs.db

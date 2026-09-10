@@ -1,0 +1,46 @@
+[
+  {
+    "disputeId": "sim-demo-001",
+    "orderId": "#1042",
+    "merchantId": "demo-merchant",
+    "reason": "fraudulent",
+    "amount": 99.99,
+    "currency": "USD",
+    "deadline": "2026-09-13T18:00:00.000Z",
+    "status": "review",
+    "createdAt": "2026-09-06T10:30:00.000Z"
+  },
+  {
+    "disputeId": "sim-demo-002",
+    "orderId": "#1038",
+    "merchantId": "demo-merchant",
+    "reason": "product_not_received",
+    "amount": 89.5,
+    "currency": "USD",
+    "deadline": "2026-09-10T12:00:00.000Z",
+    "status": "investigating",
+    "createdAt": "2026-09-05T14:15:00.000Z"
+  },
+  {
+    "disputeId": "sim-demo-003",
+    "orderId": "#1021",
+    "merchantId": "demo-merchant",
+    "reason": "duplicate",
+    "amount": 45.0,
+    "currency": "USD",
+    "deadline": "2026-09-08T09:00:00.000Z",
+    "status": "submitted",
+    "createdAt": "2026-09-01T08:00:00.000Z"
+  },
+  {
+    "disputeId": "sim-demo-004",
+    "orderId": "#1015",
+    "merchantId": "demo-merchant",
+    "reason": "unrecognized",
+    "amount": 220.0,
+    "currency": "USD",
+    "deadline": "2026-09-07T16:00:00.000Z",
+    "status": "insufficient",
+    "createdAt": "2026-08-30T11:45:00.000Z"
+  }
+]

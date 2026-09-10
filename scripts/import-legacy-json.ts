@@ -1,0 +1,7 @@
+import 'dotenv/config';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { BSON } from 'mongodb';
+import { getDb } from '../src/lib/core/db';
+import { pool } from '../src/db';
+async function main() { const directory = process.argv[2]; if (!directory) throw Error('Usage: npx tsx scripts/import-legacy-json.ts /private/export-directory'); const repo = await getDb(); for (const name of ['merchants', 'disputes', 'evidence', 'orders', 'ai_runs', 'submission_status', 'mock_alerts', 'audit_ledger']) { let text; try { text = await readFile(resolve(directory, name + '.json'), 'utf8'); } catch { console.log(name + ': no file, skipped'); continue; } const raw = text.trim(); const records = raw.startsWith('[') ? JSON.parse(raw) : raw.split('\n').filter(Boolean).map(l => JSON.parse(l)); let imported = 0, skipped = 0; for (const record of records) { const doc = BSON.EJSON.deserialize(record); const filter = name === 'merchants' ? { shopDomain: doc.shopDomain } : ['disputes', 'evidence', 'submission_status'].includes(name) ? { disputeId: doc.disputeId } : name === 'orders' ? { orderId: doc.orderId, merchantId: doc.merchantId } : doc.idempotencyKey ? { idempotencyKey: doc.idempotencyKey } : { _id: doc._id }; if (await repo.collection(name).findOne(filter)) { skipped++; continue; } await repo.collection(name).insertOne(doc); imported++; } console.log(`${name}: ${imported} imported, ${skipped} existing skipped`); } await pool.end(); } main().catch(async e => { console.error(e.message); await pool.end(); process.exitCode = 1; });
